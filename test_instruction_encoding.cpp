@@ -631,6 +631,165 @@ void testPIC12LiteralAndControl() {
     std::cout << "PIC12 Literal/Control Tests: " << passed << " passed, " << failed << " failed\n";
 }
 
+// Extended PIC16 Byte-Oriented Tests
+void testPIC16ByteOrientedExtended() {
+    printTestHeader("PIC16 BYTE-ORIENTED - EXTENDED");
+
+    std::vector<TestCase> tests = {
+        {"ANDWF f, d", "ORG 0x0000\nANDWF 0x20, 1\nEND", 0x0520, "AND W with f"},
+        {"COMF f, d", "ORG 0x0000\nCOMF 0x20, 1\nEND", 0x0920, "Complement f"},
+        {"DECF f, d", "ORG 0x0000\nDECF 0x20, 1\nEND", 0x0320, "Decrement f"},
+        {"DECFSZ f, d", "ORG 0x0000\nDECFSZ 0x20, 1\nEND", 0x0B20, "Decrement f, skip if zero"},
+        {"INCFSZ f, d", "ORG 0x0000\nINCFSZ 0x20, 1\nEND", 0x0F20, "Increment f, skip if zero"},
+        {"IORWF f, d", "ORG 0x0000\nIORWF 0x20, 1\nEND", 0x0420, "OR W with f"},
+        {"RLF f, d", "ORG 0x0000\nRLF 0x20, 1\nEND", 0x0D20, "Rotate left f through Carry"},
+        {"RRF f, d", "ORG 0x0000\nRRF 0x20, 1\nEND", 0x0C20, "Rotate right f through Carry"},
+        {"SUBWF f, d", "ORG 0x0000\nSUBWF 0x20, 1\nEND", 0x0220, "Subtract W from f"},
+        {"SWAPF f, d", "ORG 0x0000\nSWAPF 0x20, 1\nEND", 0x0E20, "Swap nibbles of f"},
+        {"XORWF f, d", "ORG 0x0000\nXORWF 0x20, 1\nEND", 0x0620, "XOR W with f"},
+        {"CLRW", "ORG 0x0000\nCLRW\nEND", 0x0100, "Clear W register"},
+        {"NOP", "ORG 0x0000\nNOP\nEND", 0x0000, "No operation"}
+    };
+
+    Assembler assembler(Architecture::PIC16);
+    int passed = 0, failed = 0;
+
+    for (const auto& test : tests) {
+        auto code = assembler.assemble(test.code);
+        if (!code.empty()) {
+            uint16_t actual = code[0].instruction;
+            bool pass = (actual == test.expectedOpcode);
+            if (pass) passed++; else failed++;
+            std::cout << (pass ? "✓ " : "✗ ") << test.name << " - Got: " << hexFormat(actual) << "\n";
+        } else {
+            failed++;
+            std::cout << "✗ " << test.name << " - " << assembler.getLastError() << "\n";
+        }
+    }
+    std::cout << "Extended Byte-Oriented: " << passed << "/" << tests.size() << " PASS\n";
+}
+
+// Extended PIC16 Control Tests
+void testPIC16ControlExtended() {
+    printTestHeader("PIC16 CONTROL - EXTENDED");
+
+    std::vector<TestCase> tests = {
+        {"CALL addr", "ORG 0x0000\nCALL 0x100\nEND", 0x2100, "Call subroutine"},
+        {"GOTO addr", "ORG 0x0000\nGOTO 0x200\nEND", 0x2800, "Unconditional branch"},
+        {"RETURN", "ORG 0x0000\nRETURN\nEND", 0x0008, "Return from subroutine"},
+        {"RETFIE", "ORG 0x0000\nRETFIE\nEND", 0x0009, "Return from interrupt"},
+        {"RETLW k", "ORG 0x0000\nRETLW 0x42\nEND", 0x3442, "Return with literal in W"},
+        {"SLEEP", "ORG 0x0000\nSLEEP\nEND", 0x0003, "Go into sleep mode"},
+        {"CLRWDT", "ORG 0x0000\nCLRWDT\nEND", 0x0004, "Clear watchdog timer"},
+        {"XORLW k", "ORG 0x0000\nXORLW 0xFF\nEND", 0x3AFF, "XOR W with literal"}
+    };
+
+    Assembler assembler(Architecture::PIC16);
+    int passed = 0, failed = 0;
+
+    for (const auto& test : tests) {
+        auto code = assembler.assemble(test.code);
+        if (!code.empty()) {
+            uint16_t actual = code[0].instruction;
+            bool pass = (actual == test.expectedOpcode);
+            if (pass) passed++; else failed++;
+            std::cout << (pass ? "✓ " : "✗ ") << test.name << " - Got: " << hexFormat(actual) << "\n";
+        } else {
+            failed++;
+            std::cout << "✗ " << test.name << " - " << assembler.getLastError() << "\n";
+        }
+    }
+    std::cout << "Extended Control: " << passed << "/" << tests.size() << " PASS\n";
+}
+
+// Extended PIC18 Byte-Oriented Tests
+void testPIC18ByteOrientedExtended() {
+    printTestHeader("PIC18 BYTE-ORIENTED - EXTENDED");
+
+    std::vector<TestCase> tests = {
+        {"ANDWF f, d", "ORG 0x0000\nANDWF 0x20, 1\nEND", 0x0520, "AND W with f"},
+        {"IORWF f, d", "ORG 0x0000\nIORWF 0x20, 1\nEND", 0x1020, "OR W with f"},
+        {"XORWF f, d", "ORG 0x0000\nXORWF 0x20, 1\nEND", 0x0720, "XOR W with f"},
+        {"COMF f, d", "ORG 0x0000\nCOMF 0x20, 1\nEND", 0x1D20, "Complement f"},
+        {"NEGF f", "ORG 0x0000\nNEGF 0x20\nEND", 0x6C00, "Negate f"},
+        {"SETF f", "ORG 0x0000\nSETF 0x20\nEND", 0x6800, "Set all bits in f"}
+    };
+
+    Assembler assembler(Architecture::PIC18);
+    int passed = 0, failed = 0;
+
+    for (const auto& test : tests) {
+        auto code = assembler.assemble(test.code);
+        if (!code.empty()) {
+            uint16_t actual = code[0].instruction;
+            bool pass = (actual == test.expectedOpcode);
+            if (pass) passed++; else failed++;
+            std::cout << (pass ? "✓ " : "✗ ") << test.name << " - Got: " << hexFormat(actual) << "\n";
+        } else {
+            failed++;
+            std::cout << "✗ " << test.name << " - " << assembler.getLastError() << "\n";
+        }
+    }
+    std::cout << "Extended Byte-Oriented: " << passed << "/" << tests.size() << " PASS\n";
+}
+
+// PIC18 Branches
+void testPIC18Branches() {
+    printTestHeader("PIC18 CONDITIONAL BRANCHES");
+
+    std::vector<TestCase> tests = {
+        {"BC addr", "ORG 0x0000\nBC 0x20\nEND", 0xE200, "Branch if Carry"},
+        {"BZ addr", "ORG 0x0000\nBZ 0x20\nEND", 0xE000, "Branch if Zero"},
+        {"BNZ addr", "ORG 0x0000\nBNZ 0x20\nEND", 0xE100, "Branch if Not Zero"},
+        {"BOV addr", "ORG 0x0000\nBOV 0x20\nEND", 0xE400, "Branch if Overflow"}
+    };
+
+    Assembler assembler(Architecture::PIC18);
+    int passed = 0, failed = 0;
+
+    for (const auto& test : tests) {
+        auto code = assembler.assemble(test.code);
+        if (!code.empty()) {
+            uint16_t actual = code[0].instruction;
+            bool pass = (actual == test.expectedOpcode);
+            if (pass) passed++; else failed++;
+            std::cout << (pass ? "✓ " : "✗ ") << test.name << " - Got: " << hexFormat(actual) << "\n";
+        } else {
+            failed++;
+            std::cout << "✗ " << test.name << " - " << assembler.getLastError() << "\n";
+        }
+    }
+    std::cout << "Conditional Branches: " << passed << "/" << tests.size() << " PASS\n";
+}
+
+// PIC18 Compare and Skip
+void testPIC18CompareSkip() {
+    printTestHeader("PIC18 COMPARE AND SKIP");
+
+    std::vector<TestCase> tests = {
+        {"CPFSEQ f", "ORG 0x0000\nCPFSEQ 0x20\nEND", 0x6200, "Compare f with W, skip if equal"},
+        {"CPFSGT f", "ORG 0x0000\nCPFSGT 0x20\nEND", 0x6400, "Compare f with W, skip if greater"},
+        {"CPFSLT f", "ORG 0x0000\nCPFSLT 0x20\nEND", 0x6000, "Compare f with W, skip if less"}
+    };
+
+    Assembler assembler(Architecture::PIC18);
+    int passed = 0, failed = 0;
+
+    for (const auto& test : tests) {
+        auto code = assembler.assemble(test.code);
+        if (!code.empty()) {
+            uint16_t actual = code[0].instruction;
+            bool pass = (actual == test.expectedOpcode);
+            if (pass) passed++; else failed++;
+            std::cout << (pass ? "✓ " : "✗ ") << test.name << " - Got: " << hexFormat(actual) << "\n";
+        } else {
+            failed++;
+            std::cout << "✗ " << test.name << " - " << assembler.getLastError() << "\n";
+        }
+    }
+    std::cout << "Compare/Skip: " << passed << "/" << tests.size() << " PASS\n";
+}
+
 int main() {
     std::cout << "\n" << std::string(70, '=') << "\n";
     std::cout << "PIC INSTRUCTION ENCODING VERIFICATION TEST SUITE\n";
@@ -645,10 +804,15 @@ int main() {
     testPIC16ByteOriented();
     testPIC16BitOriented();
     testPIC16LiteralAndControl();
+    testPIC16ByteOrientedExtended();
+    testPIC16ControlExtended();
 
     testPIC18ByteOriented();
     testPIC18BitOriented();
     testPIC18LiteralAndControl();
+    testPIC18ByteOrientedExtended();
+    testPIC18Branches();
+    testPIC18CompareSkip();
 
     std::cout << "\n" << std::string(70, '=') << "\n";
     std::cout << "VERIFICATION TEST SUITE COMPLETE\n";
