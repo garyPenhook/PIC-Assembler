@@ -18,6 +18,7 @@ set(SOURCES
     src/assembler.cpp
     src/hex_generator.cpp
     src/symbol_table.cpp
+    src/error_reporter.cpp
     src/cli.cpp
     main.cpp
 )

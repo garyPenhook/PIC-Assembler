@@ -3,9 +3,10 @@
 #include "parser.h"
 #include "instruction.h"
 #include <iostream>
+#include <memory>
 
 Assembler::Assembler(Architecture arch)
-    : successful(false), targetArch(arch) {
+    : successful(false), targetArch(arch), lastErrors(std::make_shared<ErrorReporter>()) {
     // Set the architecture in the instruction set
     InstructionSet::getInstance().setArchitecture(arch);
 }
@@ -20,8 +21,17 @@ std::vector<AssembledCode> Assembler::assemble(const std::string& source) {
         std::vector<Token> tokens = lexer.tokenize();
 
         // Parsing
-        Parser parser(tokens);
+        Parser parser(tokens, targetArch);
         std::vector<ParsedInstruction> instructions = parser.parse();
+
+        // Capture parser errors
+        lastErrors = std::make_shared<ErrorReporter>(parser.getErrorReporter());
+
+        // Check for parser errors
+        if (parser.getErrorReporter().hasErrors()) {
+            setError("Parsing failed with " + std::to_string(parser.getErrorReporter().getErrorCount()) + " error(s)");
+            return {};
+        }
 
         // Code generation
         InstructionSet& iset = InstructionSet::getInstance();

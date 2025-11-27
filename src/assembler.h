@@ -4,7 +4,9 @@
 #include <vector>
 #include <map>
 #include <cstdint>
+#include <memory>
 #include "instruction.h"
+#include "error_reporter.h"
 
 struct AssembledCode {
     uint16_t address;
@@ -33,6 +35,9 @@ public:
     // Get target architecture
     Architecture getArchitecture() const { return targetArch; }
 
+    // Get errors from compilation
+    std::shared_ptr<const ErrorReporter> getErrors() const { return lastErrors; }
+
     // Generate statistics
     void printStatistics() const;
 
@@ -41,6 +46,7 @@ private:
     std::string lastError;
     bool successful;
     Architecture targetArch;
+    std::shared_ptr<ErrorReporter> lastErrors;
 
     // Helper for error handling
     void setError(const std::string& error);

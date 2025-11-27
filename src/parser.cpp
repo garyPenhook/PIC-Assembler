@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <cctype>
 
-Parser::Parser(const std::vector<Token>& tokens)
-    : tokens(tokens), currentPos(0), programCounter(0) {}
+Parser::Parser(const std::vector<Token>& tokens, Architecture arch)
+    : tokens(tokens), currentPos(0), programCounter(0), currentArch(arch) {}
 
 Token& Parser::current() {
     static Token eof{TokenType::END_OF_FILE, "", 0, 0};
@@ -238,6 +238,11 @@ void Parser::validateOperands(ParsedInstruction& instr) {
         case InstructionType::SWAPF:
         case InstructionType::XORWF:
             if (!isValidFileRegister(instr.f_reg)) {
+                std::string hint = "File register must be in range 0-255 (0x00-0xFF).\n" +
+                                 std::string("  Format: MNEMONIC f,d where f=file register, d=0 (W) or 1 (file)");
+                errorReporter.reportOperandError(instr.line_number,
+                                               "f=" + std::to_string(instr.f_reg),
+                                               "0-255", std::to_string(instr.f_reg));
                 throw ParseError(instr.line_number, "Invalid file register: " + std::to_string(instr.f_reg));
             }
             break;
@@ -245,6 +250,9 @@ void Parser::validateOperands(ParsedInstruction& instr) {
         case InstructionType::CLRF:
         case InstructionType::MOVWF:
             if (!isValidFileRegister(instr.f_reg)) {
+                errorReporter.reportOperandError(instr.line_number,
+                                               "f=" + std::to_string(instr.f_reg),
+                                               "0-255", std::to_string(instr.f_reg));
                 throw ParseError(instr.line_number, "Invalid file register: " + std::to_string(instr.f_reg));
             }
             break;
@@ -253,10 +261,19 @@ void Parser::validateOperands(ParsedInstruction& instr) {
         case InstructionType::BSF:
         case InstructionType::BTFSC:
         case InstructionType::BTFSS:
+        case InstructionType::BTG:
             if (!isValidFileRegister(instr.f_reg)) {
+                errorReporter.reportOperandError(instr.line_number,
+                                               "f=" + std::to_string(instr.f_reg),
+                                               "0-255", std::to_string(instr.f_reg));
                 throw ParseError(instr.line_number, "Invalid file register: " + std::to_string(instr.f_reg));
             }
             if (!isValidBitPosition(instr.b_bit)) {
+                std::string hint = "Bit position must be in range 0-7 (0=LSB, 7=MSB).\n" +
+                                 std::string("  Format: MNEMONIC f,b where f=file register, b=bit position");
+                errorReporter.reportOperandError(instr.line_number,
+                                               "b=" + std::to_string(instr.b_bit),
+                                               "0-7", std::to_string(instr.b_bit));
                 throw ParseError(instr.line_number, "Invalid bit position: " + std::to_string(instr.b_bit));
             }
             break;
@@ -284,7 +301,37 @@ ParsedInstruction Parser::parseInstruction(const Token& mnemonic) {
     instr.type = iset.getMnemonicType(mnemonic.value);
 
     if (instr.type == InstructionType::INVALID) {
+        // Provide helpful suggestions for common typos
+        std::vector<std::string> suggestions;
+        std::string upper = mnemonic.value;
+        std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+
+        // Check for common mnemonics with typos
+        if (upper.find("MOV") != std::string::npos) {
+            suggestions.push_back("MOVF - Move file register to W");
+            suggestions.push_back("MOVWF - Move W to file register");
+            suggestions.push_back("MOVLW - Move literal to W");
+        } else if (upper.find("ADD") != std::string::npos) {
+            suggestions.push_back("ADDWF - Add W to file register");
+            suggestions.push_back("ADDLW - Add literal to W");
+            suggestions.push_back("ADDWFC - Add W to file with carry (PIC18)");
+        } else if (upper.find("INC") != std::string::npos) {
+            suggestions.push_back("INCF - Increment file register");
+            suggestions.push_back("INCFSZ - Increment, skip if zero");
+        }
+
+        errorReporter.reportSyntaxError(mnemonic.line, "Unknown mnemonic: '" + mnemonic.value + "'",
+                                       suggestions, "");
         throw ParseError(mnemonic.line, "Unknown mnemonic: " + mnemonic.value);
+    }
+
+    // Check if instruction is valid for current architecture
+    if (!iset.isValidForArchitecture(instr.type)) {
+        std::string archName = (currentArch == Architecture::PIC16) ? "PIC16" : "PIC18";
+        std::string requiredArch = (currentArch == Architecture::PIC16) ? "PIC18" : "PIC16";
+        errorReporter.reportArchitectureError(mnemonic.line, mnemonic.value, archName, requiredArch);
+        throw ParseError(mnemonic.line, "Instruction '" + mnemonic.value + "' not available in " +
+                        archName + " architecture");
     }
 
     // Skip optional operands if instruction has none
@@ -377,9 +424,50 @@ std::vector<ParsedInstruction> Parser::parse() {
                 ParsedInstruction instr = parseInstruction(mnemonicToken);
                 instructions.push_back(instr);
             } catch (const ParseError& e) {
-                throw e;
+                // Error already reported
             }
             continue;
+        }
+
+        // Check for identifiers that might be mispelled mnemonics
+        if (check(TokenType::IDENTIFIER)) {
+            Token& token = current();
+            // Check if this looks like it could be a mnemonic (all caps or mixed case with letters only)
+            bool looksLikeMnemonic = true;
+            for (char c : token.value) {
+                if (!std::isalpha(c)) {
+                    looksLikeMnemonic = false;
+                    break;
+                }
+            }
+
+            if (looksLikeMnemonic) {
+                // This looks like a mnemonic but isn't recognized
+                std::vector<std::string> suggestions;
+                std::string upper = token.value;
+                std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+
+                if (upper.find("MOV") != std::string::npos) {
+                    suggestions.push_back("MOVF - Move file register to W");
+                    suggestions.push_back("MOVWF - Move W to file register");
+                    suggestions.push_back("MOVLW - Move literal to W");
+                } else if (upper.find("ADD") != std::string::npos) {
+                    suggestions.push_back("ADDWF - Add W to file register");
+                    suggestions.push_back("ADDLW - Add literal to W");
+                } else if (upper.find("INC") != std::string::npos) {
+                    suggestions.push_back("INCF - Increment file register");
+                    suggestions.push_back("INCFSZ - Increment, skip if zero");
+                } else if (upper.find("DEC") != std::string::npos) {
+                    suggestions.push_back("DECF - Decrement file register");
+                    suggestions.push_back("DECFSZ - Decrement, skip if zero");
+                }
+
+                errorReporter.reportSyntaxError(token.line,
+                    "Unknown instruction '" + token.value + "'",
+                    suggestions, "");
+                advance();
+                continue;
+            }
         }
 
         // Skip unknown tokens

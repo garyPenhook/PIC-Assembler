@@ -3,9 +3,11 @@
 #include "lexer.h"
 #include "instruction.h"
 #include "symbol_table.h"
+#include "error_reporter.h"
 #include <vector>
 #include <string>
 #include <stdexcept>
+#include <memory>
 
 struct ParsedInstruction {
     InstructionType type;
@@ -34,7 +36,7 @@ private:
 
 class Parser {
 public:
-    Parser(const std::vector<Token>& tokens);
+    Parser(const std::vector<Token>& tokens, Architecture arch = Architecture::PIC16);
 
     // Parse all tokens and return list of instructions
     std::vector<ParsedInstruction> parse();
@@ -42,11 +44,17 @@ public:
     // Get symbol table after parsing
     const SymbolTable& getSymbolTable() const { return symbolTable; }
 
+    // Get error reporter
+    const ErrorReporter& getErrorReporter() const { return errorReporter; }
+    ErrorReporter& getErrorReporter() { return errorReporter; }
+
 private:
     std::vector<Token> tokens;
     size_t currentPos;
     SymbolTable symbolTable;
     uint16_t programCounter;
+    ErrorReporter errorReporter;
+    Architecture currentArch;
 
     // Helper functions
     Token& current();

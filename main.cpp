@@ -52,6 +52,11 @@ int main(int argc, const char* argv[]) {
 
         if (!assembler.wasSuccessful()) {
             cli.printError(assembler.getLastError());
+
+            // Display detailed error report
+            if (auto errors = assembler.getErrors()) {
+                errors->printReport(std::cerr);
+            }
             return 1;
         }
 
