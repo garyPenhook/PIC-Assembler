@@ -253,6 +253,204 @@ void testPIC16LiteralAndControl() {
     std::cout << "Literal/Control Tests: " << passed << " passed, " << failed << " failed\n";
 }
 
+// Test PIC18 byte-oriented instructions
+void testPIC18ByteOriented() {
+    printTestHeader("PIC18 BYTE-ORIENTED INSTRUCTION ENCODING");
+
+    std::vector<TestCase> tests = {
+        {
+            "ADDWF f, d (PIC18)",
+            "ORG 0x0000\nADDWF 0x20, 1\nEND",
+            0x2520,  // 0x2400 | (1 << 8) | 0x20 - CORRECTED
+            "Add W to file register 0x20, store in f"
+        },
+        {
+            "MOVWF f (PIC18)",
+            "ORG 0x0000\nMOVWF 0x25\nEND",
+            0x6E25,  // 0x6E00 | 0x25
+            "Move W to file register 0x25"
+        },
+        {
+            "MOVF f, d (d=0, PIC18)",
+            "ORG 0x0000\nMOVF 0x20, 0\nEND",
+            0x5020,  // 0x5000 | (0 << 8) | 0x20
+            "Move file register to W"
+        },
+        {
+            "MOVF f, d (d=1, PIC18)",
+            "ORG 0x0000\nMOVF 0x20, 1\nEND",
+            0x5120,  // 0x5000 | (1 << 8) | 0x20
+            "Move file register to itself"
+        },
+        {
+            "CLRF f (PIC18)",
+            "ORG 0x0000\nCLRF 0x30\nEND",
+            0x6A30,  // 0x6A00 | 0x30
+            "Clear file register 0x30"
+        },
+        {
+            "INCF f, d (PIC18)",
+            "ORG 0x0000\nINCF 0x21, 1\nEND",
+            0x2921,  // 0x2800 | (1 << 8) | 0x21 - CORRECTED
+            "Increment file register, store in f"
+        }
+    };
+
+    Assembler assembler(Architecture::PIC18);
+    int passed = 0, failed = 0;
+
+    for (const auto& test : tests) {
+        auto code = assembler.assemble(test.code);
+
+        if (!code.empty()) {
+            uint16_t actual = code[0].instruction;
+            bool pass = (actual == test.expectedOpcode);
+
+            if (pass) passed++;
+            else failed++;
+
+            std::cout << "\n" << test.name << "\n";
+            std::cout << "  Description: " << test.description << "\n";
+            printTestResult(pass, "Opcode Match",
+                hexFormat(test.expectedOpcode) + " (" + binaryFormat(test.expectedOpcode) + ")",
+                hexFormat(actual) + " (" + binaryFormat(actual) + ")");
+        } else {
+            failed++;
+            std::cout << "\n✗ FAIL: " << test.name << "\n";
+            std::cout << "  Error: " << assembler.getLastError() << "\n";
+        }
+    }
+
+    std::cout << "\n" << std::string(70, '-') << "\n";
+    std::cout << "PIC18 Byte-Oriented Tests: " << passed << " passed, " << failed << " failed\n";
+}
+
+// Test PIC18 bit-oriented instructions
+void testPIC18BitOriented() {
+    printTestHeader("PIC18 BIT-ORIENTED INSTRUCTION ENCODING");
+
+    std::vector<TestCase> tests = {
+        {
+            "BCF f, b (PIC18)",
+            "ORG 0x0000\nBCF 0x20, 0\nEND",
+            0x9020,  // 0x9000 | (0 << 8) | 0x20
+            "Bit Clear"
+        },
+        {
+            "BSF f, b (PIC18)",
+            "ORG 0x0000\nBSF 0x25, 3\nEND",
+            0x8325,  // 0x8000 | (3 << 8) | 0x25
+            "Bit Set"
+        },
+        {
+            "BTFSC f, b (PIC18)",
+            "ORG 0x0000\nBTFSC 0x30, 7\nEND",
+            0xB730,  // 0xB000 | (7 << 8) | 0x30
+            "Bit Test, Skip if Clear"
+        },
+        {
+            "BTFSS f, b (PIC18)",
+            "ORG 0x0000\nBTFSS 0x40, 0\nEND",
+            0xA040,  // 0xA000 | (0 << 8) | 0x40
+            "Bit Test, Skip if Set"
+        }
+    };
+
+    Assembler assembler(Architecture::PIC18);
+    int passed = 0, failed = 0;
+
+    for (const auto& test : tests) {
+        auto code = assembler.assemble(test.code);
+
+        if (!code.empty()) {
+            uint16_t actual = code[0].instruction;
+            bool pass = (actual == test.expectedOpcode);
+
+            if (pass) passed++;
+            else failed++;
+
+            std::cout << "\n" << test.name << "\n";
+            std::cout << "  Description: " << test.description << "\n";
+            printTestResult(pass, "Opcode Match",
+                hexFormat(test.expectedOpcode),
+                hexFormat(actual));
+        } else {
+            failed++;
+            std::cout << "\n✗ FAIL: " << test.name << "\n";
+            std::cout << "  Error: " << assembler.getLastError() << "\n";
+        }
+    }
+
+    std::cout << "\n" << std::string(70, '-') << "\n";
+    std::cout << "PIC18 Bit-Oriented Tests: " << passed << " passed, " << failed << " failed\n";
+}
+
+// Test PIC18 literal and control instructions
+void testPIC18LiteralAndControl() {
+    printTestHeader("PIC18 LITERAL AND CONTROL INSTRUCTION ENCODING");
+
+    std::vector<TestCase> tests = {
+        {
+            "MOVLW k (PIC18)",
+            "ORG 0x0000\nMOVLW 0x42\nEND",
+            0x0E42,  // 0x0E00 | 0x42
+            "Load literal into W register"
+        },
+        {
+            "ADDLW k (PIC18)",
+            "ORG 0x0000\nADDLW 0x55\nEND",
+            0x0F55,  // 0x0F00 | 0x55
+            "Add literal to W"
+        },
+        {
+            "SUBLW k (PIC18)",
+            "ORG 0x0000\nSUBLW 0x10\nEND",
+            0x0810,  // 0x0800 | 0x10
+            "Subtract W from literal"
+        },
+        {
+            "ANDLW k (PIC18)",
+            "ORG 0x0000\nANDLW 0xFF\nEND",
+            0x0BFF,  // 0x0B00 | 0xFF
+            "AND W with literal"
+        },
+        {
+            "IORLW k (PIC18)",
+            "ORG 0x0000\nIORLW 0x0F\nEND",
+            0x090F,  // 0x0900 | 0x0F
+            "Inclusive OR W with literal"
+        }
+    };
+
+    Assembler assembler(Architecture::PIC18);
+    int passed = 0, failed = 0;
+
+    for (const auto& test : tests) {
+        auto code = assembler.assemble(test.code);
+
+        if (!code.empty()) {
+            uint16_t actual = code[0].instruction;
+            bool pass = (actual == test.expectedOpcode);
+
+            if (pass) passed++;
+            else failed++;
+
+            std::cout << "\n" << test.name << "\n";
+            std::cout << "  Description: " << test.description << "\n";
+            printTestResult(pass, "Opcode Match",
+                hexFormat(test.expectedOpcode),
+                hexFormat(actual));
+        } else {
+            failed++;
+            std::cout << "\n✗ FAIL: " << test.name << "\n";
+            std::cout << "  Error: " << assembler.getLastError() << "\n";
+        }
+    }
+
+    std::cout << "\n" << std::string(70, '-') << "\n";
+    std::cout << "PIC18 Literal/Control Tests: " << passed << " passed, " << failed << " failed\n";
+}
+
 int main() {
     std::cout << "\n" << std::string(70, '=') << "\n";
     std::cout << "PIC INSTRUCTION ENCODING VERIFICATION TEST SUITE\n";
@@ -263,6 +461,10 @@ int main() {
     testPIC16ByteOriented();
     testPIC16BitOriented();
     testPIC16LiteralAndControl();
+
+    testPIC18ByteOriented();
+    testPIC18BitOriented();
+    testPIC18LiteralAndControl();
 
     std::cout << "\n" << std::string(70, '=') << "\n";
     std::cout << "VERIFICATION TEST SUITE COMPLETE\n";
