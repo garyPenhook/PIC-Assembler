@@ -429,7 +429,54 @@ void Parser::parseDirective(const Token& directive) {
     }
 }
 
+void Parser::firstPass() {
+    // First pass: collect all labels and handle directives
+    // This populates the symbol table before code generation
+    currentPos = 0;
+    programCounter = 0;
+
+    while (!check(TokenType::END_OF_FILE)) {
+        // Check for labels
+        if (check(TokenType::IDENTIFIER)) {
+            Token& identToken = current();
+            if (peek().type == TokenType::COLON) {
+                // Register label at current program counter
+                std::string label = identToken.value;
+                symbolTable.addLabel(label, programCounter);
+                advance();  // Skip identifier
+                advance();  // Skip colon
+                continue;
+            }
+        }
+
+        // Check for directives
+        if (check(TokenType::DIRECTIVE)) {
+            parseDirective(current());
+            advance();
+            continue;
+        }
+
+        // Check for mnemonics - they increment program counter
+        if (check(TokenType::MNEMONIC)) {
+            advance();
+            programCounter++;  // Each instruction uses one word
+            continue;
+        }
+
+        // Skip other tokens
+        advance();
+    }
+
+    // Reset position for second pass
+    currentPos = 0;
+    programCounter = 0;
+}
+
 std::vector<ParsedInstruction> Parser::parse() {
+    // Two-pass assembly
+    firstPass();  // First pass: collect all labels
+
+    // Second pass: generate code using complete symbol table
     std::vector<ParsedInstruction> instructions;
 
     while (!check(TokenType::END_OF_FILE)) {

@@ -38,8 +38,11 @@ class Parser {
 public:
     Parser(const std::vector<Token>& tokens, Architecture arch = Architecture::PIC16);
 
-    // Parse all tokens and return list of instructions
+    // Parse all tokens and return list of instructions (two-pass: labels first, then code)
     std::vector<ParsedInstruction> parse();
+
+    // First pass: collect all labels and populate symbol table
+    void firstPass();
 
     // Get symbol table after parsing
     const SymbolTable& getSymbolTable() const { return symbolTable; }

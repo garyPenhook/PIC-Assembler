@@ -16,6 +16,13 @@ struct AssembledCode {
     int lineNumber;
 };
 
+struct DataDefinition {
+    uint16_t address;
+    std::vector<uint8_t> bytes;
+    std::string sourceCode;
+    int lineNumber;
+};
+
 class Assembler {
 public:
     // Constructor with architecture parameter
