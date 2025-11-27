@@ -1,8 +1,9 @@
-# PIC16/PIC18 Assembler
+# GnSasm - PIC16/PIC18 Assembler
 
 A modern, standards-compliant assembler for Microchip PIC microcontrollers with MPASM-compatible syntax. Supports both PIC16 (14-bit) and PIC18 (16-bit) instruction sets with helpful error messages and architecture validation.
 
-**Latest Version:** 1.1
+**Latest Version:** 1.2
+**Command:** `gnsasm`
 **Target Devices:** PIC16F18076, PIC18-Q40, and compatible microcontrollers
 
 ## Features
@@ -12,9 +13,13 @@ A modern, standards-compliant assembler for Microchip PIC microcontrollers with 
 - PIC18 and PIC18-Q40 microcontrollers (16-bit instruction words)
 - Architecture-aware instruction validation and encoding
 
-🎯 **Comprehensive Instruction Sets**
-- PIC16: 35 instructions (byte-oriented, bit-oriented, literal/control)
-- PIC18: 54+ instructions (includes conditional branches, compare/skip, table operations)
+🎯 **Complete Instruction Set Coverage**
+- **PIC16:** 35 instructions (100% coverage)
+  - Byte-oriented, bit-oriented, literal/control operations
+- **PIC18:** 54+ instructions (100% coverage)
+  - All byte-oriented, bit-oriented, conditional branches
+  - Compare/skip, table operations, FSR operations
+  - Stack operations, multiplication, and more
 
 🔍 **Intelligent Error Reporting**
 - Helpful error messages with line/column information
@@ -126,7 +131,7 @@ cmake -DCMAKE_BUILD_TYPE=Release ..
 cmake --build . -j$(nproc)
 
 # Verify installation
-./pic-assembler --version
+./gnsasm --version
 ```
 
 #### Install (Optional)
@@ -153,7 +158,7 @@ cmake -DCMAKE_CXX_COMPILER=clang++ ..       # Clang
 cmake -DCMAKE_CXX_COMPILER=icpc ..          # Intel C++
 
 # Custom installation prefix
-cmake -DCMAKE_INSTALL_PREFIX=/opt/pic-asm ..
+cmake -DCMAKE_INSTALL_PREFIX=/usr/local ..
 
 # Specify build system
 cmake -G "Unix Makefiles" ..                # Make (default)
@@ -166,21 +171,21 @@ cmake -G "Visual Studio 16 2019" ..         # Visual Studio
 ### Basic Usage
 ```bash
 # Assemble for PIC16 (default)
-pic-assembler program.asm
+gnsasm program.asm
 
 # Assemble for PIC18
-pic-assembler program.asm -a pic18
+gnsasm program.asm -a pic18
 
 # Specify output file
-pic-assembler program.asm -o output.hex
+gnsasm program.asm -o output.hex
 
 # Verbose mode
-pic-assembler program.asm --verbose
+gnsasm program.asm --verbose
 ```
 
 ### Command-Line Options
 ```bash
-pic-assembler [options] input.asm
+gnsasm [options] input.asm
 
 Options:
   -a, --arch ARCH      Target architecture: pic16 or pic18 (default: pic16)
@@ -191,10 +196,10 @@ Options:
   -v, --version       Display version information
 
 Examples:
-  pic-assembler program.asm
-  pic-assembler program.asm -a pic18
-  pic-assembler program.asm -o firmware.hex
-  pic-assembler program.asm -a pic18 -o firmware.hex --verbose
+  gnsasm program.asm
+  gnsasm program.asm -a pic18
+  gnsasm program.asm -o firmware.hex
+  gnsasm program.asm -a pic18 -o firmware.hex --verbose
 ```
 
 ## Usage Guide
@@ -219,7 +224,7 @@ loop:           ; Another label
 
 #### Directives
 ```asm
- ORG 0x0000      ; Set program origin
+ORG 0x0000      ; Set program origin
 EQU CONST=0x20  ; Define constant
 END             ; End of program
 ```
@@ -255,7 +260,7 @@ loop:   INCF 0x20,1     ; Increment register
 
 Assemble with:
 ```bash
-pic-assembler counter.asm -o counter.hex
+gnsasm counter.asm -o counter.hex
 ```
 
 ### PIC18 Example Program
@@ -283,14 +288,14 @@ loop:   MOVLW 0x00
 
 Assemble with:
 ```bash
-pic-assembler counter18.asm -a pic18 -o counter18.hex
+gnsasm counter18.asm -a pic18 -o counter18.hex
 ```
 
 ### Working with Different Architectures
 
 #### Detecting Architecture Errors
 ```bash
-$ pic-assembler pic18_code.asm  # Using PIC18 code with PIC16 target
+$ gnsasm pic18_code.asm  # Using PIC18 code with PIC16 target
 Error: Parsing failed with 1 error(s)
 ========================================
 [error] Line 4, Column 1
@@ -301,7 +306,130 @@ Error: Parsing failed with 1 error(s)
 #### Fixing Architecture Issues
 ```bash
 # Switch to correct architecture
-pic-assembler pic18_code.asm -a pic18 -o output.hex
+gnsasm pic18_code.asm -a pic18 -o output.hex
+```
+
+## Supported Instructions
+
+### PIC16 Instructions (35 total - 100% coverage)
+
+#### Byte-Oriented Operations (18)
+```
+ADDWF   - Add W to file register
+ANDWF   - AND W with file register
+CLRF    - Clear file register
+CLRW    - Clear W register
+COMF    - Complement file register
+DECF    - Decrement file register
+DECFSZ  - Decrement file register, skip if zero
+INCF    - Increment file register
+INCFSZ  - Increment file register, skip if zero
+IORWF   - Inclusive OR W with file register
+MOVF    - Move file register to W
+MOVWF   - Move W to file register
+NOP     - No operation
+RLF     - Rotate left file register through carry
+RRF     - Rotate right file register through carry
+SUBWF   - Subtract W from file register
+SWAPF   - Swap nibbles in file register
+XORWF   - Exclusive OR W with file register
+```
+
+#### Bit-Oriented Operations (4)
+```
+BCF     - Clear bit in file register
+BSF     - Set bit in file register
+BTFSC   - Bit test skip if clear
+BTFSS   - Bit test skip if set
+```
+
+#### Literal and Control Operations (13)
+```
+ADDLW   - Add literal to W
+ANDLW   - AND literal with W
+CALL    - Call subroutine
+CLRWDT  - Clear watchdog timer
+GOTO    - Jump to address
+IORLW   - Inclusive OR literal with W
+MOVLW   - Move literal to W
+RETFIE  - Return from interrupt
+RETLW   - Return with literal in W
+RETURN  - Return from subroutine
+SLEEP   - Enter sleep mode
+SUBLW   - Subtract W from literal
+XORLW   - Exclusive OR literal with W
+```
+
+### PIC18 Instructions (54+ total - 100% coverage)
+
+#### Shared Instructions (35)
+All PIC16 instructions listed above, plus:
+
+#### Additional Byte-Oriented Operations (11)
+```
+ADDWFC  - Add W to file register with carry
+DCFSNZ  - Decrement file register, skip if not zero
+INFSNZ  - Increment file register, skip if not zero
+MOVFF   - Move file register to file register
+MULWF   - Multiply W with file register
+NEGF    - Negate file register
+RLCF    - Rotate left file register through carry
+RLNCF   - Rotate left file register, no carry
+RRCF    - Rotate right file register through carry
+RRNCF   - Rotate right file register, no carry
+TSTFSZ  - Test file register, skip if zero
+SUBFWB  - Subtract W from file register with borrow
+SUBWFB  - Subtract file register from W with borrow
+```
+
+#### Additional Bit-Oriented Operations (1)
+```
+BTG     - Bit toggle
+```
+
+#### Compare and Skip Operations (3)
+```
+CPFSEQ  - Compare file register with W, skip if equal
+CPFSGT  - Compare file register with W, skip if greater
+CPFSLT  - Compare file register with W, skip if less
+```
+
+#### Conditional Branch Operations (9)
+```
+BC      - Branch if carry
+BN      - Branch if negative
+BNC     - Branch if not carry
+BNN     - Branch if not negative
+BNOV    - Branch if not overflow
+BNZ     - Branch if not zero
+BOV     - Branch if overflow
+BRA     - Unconditional branch
+BZ      - Branch if zero
+```
+
+#### Stack and Control Operations (6)
+```
+CALLW   - Call using W register
+DAW     - Decimal adjust W
+POP     - Pop stack
+PUSH    - Push top of stack
+RCALL   - Relative call
+RESET   - Reset processor
+```
+
+#### File Select Register Operations (5)
+```
+ADDFSR  - Add to file select register
+LFSR    - Load file select register
+MOVLB   - Move literal to BSR (bank select register)
+MULLW   - Multiply literal with W
+SUBFSR  - Subtract from file select register
+```
+
+#### Table Operations (2)
+```
+TBLRD   - Table read
+TBLWT   - Table write
 ```
 
 ## Error Messages and Diagnostics
@@ -356,36 +484,11 @@ The assembler generates Intel HEX format files (.hex) compatible with standard P
 - **Address format:** 16-bit addresses
 - **Data encoding:** Hexadecimal
 
-## Supported Instructions
-
-### PIC16 Instructions (35 total)
-
-**Byte-Oriented (18)**
-ADDWF, ANDWF, CLRF, CLRW, COMF, DECF, DECFSZ, INCF, INCFSZ, IORWF, MOVF, MOVWF, NOP, RLF, RRF, SUBWF, SWAPF, XORWF
-
-**Bit-Oriented (4)**
-BCF, BSF, BTFSC, BTFSS
-
-**Literal/Control (13)**
-ADDLW, ANDLW, CALL, CLRWDT, GOTO, IORLW, MOVLW, RETFIE, RETLW, RETURN, SLEEP, SUBLW, XORLW
-
-### PIC18 Instructions (54+ total)
-
-**Includes all PIC16 instructions plus:**
-- Conditional branches: BRA, BZ, BC, BN, BNC, BNN, BNOV, BNZ, BOV
-- Compare/Skip: CPFSEQ, CPFSGT, CPFSLT
-- Enhanced byte operations: ADDWFC, SETF, NEGF, RLCF, RLNCF, etc.
-- Stack operations: PUSH, POP
-- Table operations: TBLRD, TBLWT
-- And more...
-
-See `ARCHITECTURE.md` for complete instruction details.
-
 ## Advanced Usage
 
 ### Verbose Output
 ```bash
-pic-assembler program.asm --verbose
+gnsasm program.asm --verbose
 
 # Output includes:
 # - File being read
@@ -397,14 +500,14 @@ pic-assembler program.asm --verbose
 
 ### Custom Output Directory
 ```bash
-pic-assembler src/program.asm -o output/program.hex
+gnsasm src/program.asm -o output/program.hex
 ```
 
 ### Batch Assembly
 ```bash
 #!/bin/bash
 for file in *.asm; do
-    pic-assembler "$file" -o "${file%.asm}.hex"
+    gnsasm "$file" -o "${file%.asm}.hex"
     echo "Assembled: $file"
 done
 ```
@@ -413,7 +516,7 @@ done
 
 Example Makefile:
 ```makefile
-ASSEMBLER = pic-assembler
+ASSEMBLER = gnsasm
 ARCH = pic16
 
 .PHONY: all clean
@@ -467,7 +570,7 @@ pwd
 ```bash
 # Check for typos
 # Verify architecture selection matches your device
-pic-assembler program.asm -a pic18
+gnsasm program.asm -a pic18
 ```
 
 **Problem:** Invalid operand range
@@ -539,7 +642,7 @@ Enable debug build for debugging:
 ```bash
 cmake -DCMAKE_BUILD_TYPE=Debug ..
 cmake --build .
-gdb ./pic-assembler
+gdb ./gnsasm
 ```
 
 ## Future Enhancements
@@ -574,7 +677,12 @@ For issues, questions, or suggestions:
 
 ## Version History
 
-**v1.1 (Current)**
+**v1.2 (Current)**
+- Renamed executable to `gnsasm`
+- Complete PIC18 instruction set implementation (54+ instructions)
+- All instructions fully encoded and tested
+
+**v1.1**
 - Added PIC18-Q40 support
 - Comprehensive error reporting system
 - Architecture validation
@@ -591,5 +699,6 @@ Developed as a modern replacement for MPASM with enhanced error messages and mul
 ---
 
 **Website:** https://github.com/garyPenhook/PIC-Assembler
+**Command:** `gnsasm`
 **Maintainer:** Gary Penhook
 **Last Updated:** November 2025

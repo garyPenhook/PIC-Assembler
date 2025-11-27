@@ -35,7 +35,10 @@ set(HEADERS
 )
 
 # Create executable
-add_executable(pic-assembler ${SOURCES} ${HEADERS})
+add_executable(gnsasm ${SOURCES} ${HEADERS})
 
 # Include directories
-target_include_directories(pic-assembler PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(gnsasm PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+# Install executable
+install(TARGETS gnsasm DESTINATION bin)
