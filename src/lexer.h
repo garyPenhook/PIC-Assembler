@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include "exceptions.h"
 
 enum class TokenType {
     // Literals and identifiers

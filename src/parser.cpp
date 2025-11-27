@@ -67,39 +67,51 @@ Token& Parser::consume(TokenType type, const std::string& message) {
 }
 
 uint16_t Parser::parseNumber(const std::string& str) {
-    if (str.empty()) {
-        throw std::runtime_error("Empty number string");
+    try {
+        if (str.empty()) {
+            throw InvalidNumberFormatException(str, "empty number string");
+        }
+
+        std::string trimmed = str;
+        // Remove whitespace
+        trimmed.erase(0, trimmed.find_first_not_of(" \t"));
+        trimmed.erase(trimmed.find_last_not_of(" \t") + 1);
+
+        try {
+            // Check for hex (0x prefix)
+            if (trimmed.size() >= 3 && trimmed[0] == '0' && (trimmed[1] == 'x' || trimmed[1] == 'X')) {
+                return static_cast<uint16_t>(std::stoi(trimmed.substr(2), nullptr, 16));
+            }
+
+            // Check for hex (H suffix - MPASM style)
+            if (trimmed.size() >= 2 && (trimmed.back() == 'h' || trimmed.back() == 'H')) {
+                std::string hexStr = trimmed.substr(0, trimmed.length() - 1);
+                return static_cast<uint16_t>(std::stoi(hexStr, nullptr, 16));
+            }
+
+            // Check for binary (0b prefix)
+            if (trimmed.size() >= 3 && trimmed[0] == '0' && (trimmed[1] == 'b' || trimmed[1] == 'B')) {
+                return static_cast<uint16_t>(std::stoi(trimmed.substr(2), nullptr, 2));
+            }
+
+            // Check for binary (B suffix - MPASM style)
+            if (trimmed.size() >= 2 && (trimmed.back() == 'b' || trimmed.back() == 'B')) {
+                std::string binStr = trimmed.substr(0, trimmed.length() - 1);
+                return static_cast<uint16_t>(std::stoi(binStr, nullptr, 2));
+            }
+
+            // Decimal
+            return static_cast<uint16_t>(std::stoi(trimmed));
+        } catch (const std::invalid_argument&) {
+            throw InvalidNumberFormatException(str, "invalid number format");
+        } catch (const std::out_of_range&) {
+            throw InvalidNumberFormatException(str, "number out of range (must be 0-65535)");
+        }
+    } catch (const InvalidNumberFormatException&) {
+        throw;  // Re-throw our custom exception
+    } catch (const std::exception& e) {
+        throw InvalidNumberFormatException(str, std::string(e.what()));
     }
-
-    std::string trimmed = str;
-    // Remove whitespace
-    trimmed.erase(0, trimmed.find_first_not_of(" \t"));
-    trimmed.erase(trimmed.find_last_not_of(" \t") + 1);
-
-    // Check for hex (0x prefix)
-    if (trimmed.size() >= 3 && trimmed[0] == '0' && (trimmed[1] == 'x' || trimmed[1] == 'X')) {
-        return static_cast<uint16_t>(std::stoi(trimmed.substr(2), nullptr, 16));
-    }
-
-    // Check for hex (H suffix - MPASM style)
-    if (trimmed.size() >= 2 && (trimmed.back() == 'h' || trimmed.back() == 'H')) {
-        std::string hexStr = trimmed.substr(0, trimmed.length() - 1);
-        return static_cast<uint16_t>(std::stoi(hexStr, nullptr, 16));
-    }
-
-    // Check for binary (0b prefix)
-    if (trimmed.size() >= 3 && trimmed[0] == '0' && (trimmed[1] == 'b' || trimmed[1] == 'B')) {
-        return static_cast<uint16_t>(std::stoi(trimmed.substr(2), nullptr, 2));
-    }
-
-    // Check for binary (B suffix - MPASM style)
-    if (trimmed.size() >= 2 && (trimmed.back() == 'b' || trimmed.back() == 'B')) {
-        std::string binStr = trimmed.substr(0, trimmed.length() - 1);
-        return static_cast<uint16_t>(std::stoi(binStr, nullptr, 2));
-    }
-
-    // Decimal
-    return static_cast<uint16_t>(std::stoi(trimmed));
 }
 
 void Parser::parseOperands(ParsedInstruction& instr, const std::string& operandStr) {

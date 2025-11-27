@@ -149,26 +149,65 @@ bool HexGenerator::writeToFile(const std::string& filename,
                                const std::vector<AssembledCode>& code,
                                const std::vector<DataDefinition>& data) {
     try {
-        std::string hexContent = generateHex(code, data);
+        // Validate filename
+        if (filename.empty()) {
+            throw InvalidPathException("<empty filename>");
+        }
 
-        if (hexContent.empty()) {
-            lastError = "Failed to generate HEX content";
+        try {
+            // Generate HEX content
+            std::string hexContent = generateHex(code, data);
+
+            if (hexContent.empty()) {
+                throw HexGenerationException("No HEX content was generated from input code and data");
+            }
+
+            // Attempt to open file for writing
+            std::ofstream file(filename, std::ios::out);
+            if (!file.is_open()) {
+                throw FileWriteException(filename, "file could not be opened for writing");
+            }
+
+            // Write content to file
+            try {
+                file << hexContent;
+                if (!file.good()) {
+                    throw FileWriteException(filename, "write operation failed");
+                }
+            } catch (const std::ios_base::failure& e) {
+                throw FileWriteException(filename, std::string(e.what()));
+            }
+
+            // Close file and check for errors
+            file.close();
+            if (file.fail()) {
+                throw FileWriteException(filename, "close operation failed");
+            }
+
+            return true;
+
+        } catch (const FileException& e) {
+            lastError = e.what();
+            return false;
+        } catch (const HexGenerationException& e) {
+            lastError = e.what();
             return false;
         }
 
-        std::ofstream file(filename, std::ios::out);
-        if (!file.is_open()) {
-            lastError = "Cannot open file for writing: " + filename;
-            return false;
-        }
-
-        file << hexContent;
-        file.close();
-
-        return true;
-
+    } catch (const FileException& e) {
+        lastError = e.what();
+        return false;
+    } catch (const AssemblerException& e) {
+        lastError = std::string(e.what());
+        return false;
+    } catch (const std::bad_alloc&) {
+        lastError = "Out of memory while writing HEX file";
+        return false;
     } catch (const std::exception& e) {
         lastError = "Error writing HEX file: " + std::string(e.what());
+        return false;
+    } catch (...) {
+        lastError = "Unknown error occurred while writing HEX file";
         return false;
     }
 }

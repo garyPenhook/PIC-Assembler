@@ -2,6 +2,7 @@
 
 #include "assembler.h"
 #include "instruction.h"
+#include "exceptions.h"
 #include <string>
 #include <vector>
 

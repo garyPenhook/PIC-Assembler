@@ -8,6 +8,7 @@
 #include "instruction.h"
 #include "error_reporter.h"
 #include "device_specs.h"
+#include "exceptions.h"
 
 struct AssembledCode {
     uint16_t address;

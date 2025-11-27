@@ -4,6 +4,7 @@
 #include "instruction.h"
 #include "symbol_table.h"
 #include "error_reporter.h"
+#include "exceptions.h"
 #include <vector>
 #include <string>
 #include <stdexcept>

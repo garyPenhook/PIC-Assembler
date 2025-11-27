@@ -126,6 +126,11 @@ Token Lexer::readHexNumber() {
         advance();
     }
 
+    // Ensure at least one hex digit after 0x
+    if (!isHexDigit(currentChar())) {
+        throw InvalidNumberFormatException(value, "expected hex digit after '" + value + "'");
+    }
+
     while (position < source.length() && isHexDigit(currentChar())) {
         value += currentChar();
         advance();
@@ -144,6 +149,11 @@ Token Lexer::readBinaryNumber() {
     if (currentChar() == 'b' || currentChar() == 'B') {
         value += currentChar();  // Add 'b' or 'B'
         advance();
+    }
+
+    // Ensure at least one binary digit after 0b
+    if (!isBinaryDigit(currentChar())) {
+        throw InvalidNumberFormatException(value, "expected binary digit (0 or 1) after '" + value + "'");
     }
 
     while (position < source.length() && isBinaryDigit(currentChar())) {
@@ -167,17 +177,23 @@ Token Lexer::readString() {
             if (position < source.length()) {
                 value += currentChar();
                 advance();
+            } else {
+                throw UnterminatedStringException(startLine, startColumn);
             }
+        } else if (currentChar() == '\n') {
+            // String literals cannot span multiple lines
+            throw UnterminatedStringException(startLine, startColumn);
         } else {
             value += currentChar();
             advance();
         }
     }
 
-    if (currentChar() == '"') {
-        advance(); // Skip closing quote
+    if (currentChar() != '"') {
+        throw UnterminatedStringException(startLine, startColumn);
     }
 
+    advance(); // Skip closing quote
     return {TokenType::STRING, value, startLine, startColumn};
 }
 

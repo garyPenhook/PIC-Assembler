@@ -19,52 +19,89 @@ std::vector<AssembledCode> Assembler::assemble(const std::string& source) {
     successful = false;
 
     try {
-        // Lexical analysis
-        Lexer lexer(source);
-        std::vector<Token> tokens = lexer.tokenize();
+        // Validate input
+        if (source.empty()) {
+            throw AssemblyException("Source code is empty");
+        }
 
-        // Parsing
-        Parser parser(tokens, targetArch);
-        std::vector<ParsedInstruction> instructions = parser.parse();
+        try {
+            // Lexical analysis
+            Lexer lexer(source);
+            std::vector<Token> tokens = lexer.tokenize();
 
-        // Capture parser errors
-        lastErrors = std::make_shared<ErrorReporter>(parser.getErrorReporter());
+            if (tokens.empty()) {
+                throw LexerException(1, 1, "No tokens generated from source");
+            }
 
-        // Check for parser errors
-        if (parser.getErrorReporter().hasErrors()) {
-            setError("Parsing failed with " + std::to_string(parser.getErrorReporter().getErrorCount()) + " error(s)");
+            // Parsing
+            Parser parser(tokens, targetArch);
+            std::vector<ParsedInstruction> instructions = parser.parse();
+
+            // Capture parser errors
+            lastErrors = std::make_shared<ErrorReporter>(parser.getErrorReporter());
+
+            // Check for parser errors
+            if (parser.getErrorReporter().hasErrors()) {
+                setError("Parsing failed with " + std::to_string(parser.getErrorReporter().getErrorCount()) + " error(s)");
+                return {};
+            }
+
+            // Store data definitions from parser
+            generatedData = parser.getDataDefinitions();
+
+            // Code generation
+            InstructionSet& iset = InstructionSet::getInstance();
+
+            for (const auto& parsed : instructions) {
+                try {
+                    uint16_t opcode = iset.encodeInstruction(parsed.type, parsed.f_reg,
+                                                             parsed.d_bit, parsed.b_bit,
+                                                             parsed.k_value);
+
+                    AssembledCode code{};
+                    code.address = parsed.address;
+                    code.instruction = opcode;
+                    code.sourceCode = parsed.mnemonic + " " + parsed.mnemonic;
+                    code.lineNumber = parsed.line_number;
+
+                    generatedCode.push_back(code);
+                } catch (const InstructionEncodingException&) {
+                    throw;  // Re-throw
+                } catch (const std::exception& e) {
+                    throw CodeGenerationException(parsed.line_number,
+                        "Failed to encode instruction '" + parsed.mnemonic + "': " + std::string(e.what()));
+                }
+            }
+
+            successful = true;
+            return generatedCode;
+
+        } catch (const LexerException& e) {
+            setError(e.what());
+            return {};
+        } catch (const ParseException& e) {
+            setError(e.what());
+            return {};
+        } catch (const ValidationException& e) {
+            setError(e.what());
+            return {};
+        } catch (const CodeGenerationException& e) {
+            setError(e.what());
             return {};
         }
 
-        // Store data definitions from parser
-        generatedData = parser.getDataDefinitions();
-
-        // Code generation
-        InstructionSet& iset = InstructionSet::getInstance();
-
-        for (const auto& parsed : instructions) {
-            uint16_t opcode = iset.encodeInstruction(parsed.type, parsed.f_reg,
-                                                     parsed.d_bit, parsed.b_bit,
-                                                     parsed.k_value);
-
-            AssembledCode code{};
-            code.address = parsed.address;
-            code.instruction = opcode;
-            code.sourceCode = parsed.mnemonic + " " + parsed.mnemonic;
-            code.lineNumber = parsed.line_number;
-
-            generatedCode.push_back(code);
-        }
-
-        successful = true;
-        return generatedCode;
-
-    } catch (const ParseError& e) {
-        setError("Parse Error at line " + std::to_string(e.getLine()) + ": " + e.getMessage());
+    } catch (const AssemblerException& e) {
+        setError(e.what());
+        return {};
+    } catch (const std::bad_alloc&) {
+        setError("Out of memory during assembly");
         return {};
     } catch (const std::exception& e) {
-        std::string errorMsg = e.what();
-        setError("Assembly Error: " + errorMsg);
+        std::string errorMsg = std::string("Unexpected error during assembly: ") + e.what();
+        setError(errorMsg);
+        return {};
+    } catch (...) {
+        setError("Unknown fatal error during assembly");
         return {};
     }
 }
