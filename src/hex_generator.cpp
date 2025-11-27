@@ -115,8 +115,9 @@ std::string HexGenerator::generateHex(const std::vector<AssembledCode>& code,
         uint32_t byteAddress = item.first;
 
         if (byteAddress != currentAddress && !currentData.empty()) {
-            // Write current record
-            std::string record = createRecord(RecordType::DATA, currentAddress & 0xFFFF, currentData);
+            // Write current record at the START address of accumulated data
+            uint32_t recordAddress = currentAddress - currentData.size();
+            std::string record = createRecord(RecordType::DATA, recordAddress & 0xFFFF, currentData);
             result << record << "\n";
             currentData.clear();
         }

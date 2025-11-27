@@ -510,6 +510,10 @@ std::vector<ParsedInstruction> Parser::parse() {
     // Two-pass assembly
     firstPass();  // First pass: collect all labels
 
+    // Clear data definitions from first pass before second pass
+    // (they were only needed to advance PC during first pass)
+    dataDefinitions.clear();
+
     // Second pass: generate code using complete symbol table
     std::vector<ParsedInstruction> instructions;
 
