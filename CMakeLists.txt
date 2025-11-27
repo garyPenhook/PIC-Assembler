@@ -10,8 +10,8 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-# Source files
-set(SOURCES
+# Source files (common to all targets)
+set(COMMON_SOURCES
     src/lexer.cpp
     src/parser.cpp
     src/instruction.cpp
@@ -22,8 +22,10 @@ set(SOURCES
     src/device_specs.cpp
     src/expression.cpp
     src/cli.cpp
-    main.cpp
 )
+
+# Main app sources
+set(SOURCES ${COMMON_SOURCES} main.cpp)
 
 # Header files
 set(HEADERS
@@ -46,3 +48,11 @@ target_include_directories(gnsasm PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # Install executable
 install(TARGETS gnsasm DESTINATION bin)
+
+# Test executable for instruction encoding verification
+add_executable(test_instruction_encoding test_instruction_encoding.cpp ${COMMON_SOURCES} ${HEADERS})
+target_include_directories(test_instruction_encoding PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+# Add test target
+enable_testing()
+add_test(NAME InstructionEncoding COMMAND test_instruction_encoding)
