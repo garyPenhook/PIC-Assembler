@@ -209,7 +209,7 @@ uint16_t InstructionSet::encodePIC12Instruction(InstructionType type, uint8_t f_
     else if (type == InstructionType::SWAPF) opcode = Opcodes12::SWAPF | (d_bit << 7) | f_reg;
     else if (type == InstructionType::XORWF) opcode = Opcodes12::XORWF | (d_bit << 7) | f_reg;
 
-    // Bit-Oriented Operations
+    // Bit-Oriented Operations: Bit position in bits 8-6 for PIC12 (9-bit instruction word)
     else if (type == InstructionType::BCF) opcode = Opcodes12::BCF | (b_bit << 7) | f_reg;
     else if (type == InstructionType::BSF) opcode = Opcodes12::BSF | (b_bit << 7) | f_reg;
     else if (type == InstructionType::BTFSC) opcode = Opcodes12::BTFSC | (b_bit << 7) | f_reg;
@@ -298,17 +298,18 @@ uint16_t InstructionSet::encodePIC16Instruction(InstructionType type, uint8_t f_
             break;
 
         // Bit-Oriented Operations: 10bbbffffffff
+        // Bit position (bbb) is in bits 11-9, not bits 8-6
         case InstructionType::BCF:
-            opcode = Opcodes16Classic::BCF | (b_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::BCF | (b_bit << 9) | f_reg;
             break;
         case InstructionType::BSF:
-            opcode = Opcodes16Classic::BSF | (b_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::BSF | (b_bit << 9) | f_reg;
             break;
         case InstructionType::BTFSC:
-            opcode = Opcodes16Classic::BTFSC | (b_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::BTFSC | (b_bit << 9) | f_reg;
             break;
         case InstructionType::BTFSS:
-            opcode = Opcodes16Classic::BTFSS | (b_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::BTFSS | (b_bit << 9) | f_reg;
             break;
 
         // Literal and Control Operations: xxxkkkkkkkkkkkk

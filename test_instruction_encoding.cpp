@@ -63,13 +63,13 @@ void testPIC16ByteOriented() {
         {
             "ADDWF f, d",
             "ORG 0x0000\nADDWF 0x20, 1\nEND",
-            0x0720,  // 0x0700 | (1 << 7) | 0x20
+            0x07A0,  // 0x0700 | (1 << 7) | 0x20 - CORRECTED
             "Add W to file register 0x20, store in f"
         },
         {
             "MOVWF f",
             "ORG 0x0000\nMOVWF 0x25\nEND",
-            0x0085,  // 0x0080 | 0x25
+            0x00A5,  // 0x0080 | 0x25 - CORRECTED
             "Move W to file register 0x25"
         },
         {
@@ -81,13 +81,13 @@ void testPIC16ByteOriented() {
         {
             "MOVF f, d (d=1, store in f)",
             "ORG 0x0000\nMOVF 0x20, 1\nEND",
-            0x0920,  // 0x0800 | (1 << 7) | 0x20
+            0x08A0,  // 0x0800 | (1 << 7) | 0x20 - CORRECTED
             "Move file register to itself"
         },
         {
             "CLRF f",
             "ORG 0x0000\nCLRF 0x30\nEND",
-            0x0190,  // 0x0180 | 0x30
+            0x01B0,  // 0x0180 | 0x30 - CORRECTED
             "Clear file register 0x30"
         },
         {
@@ -141,13 +141,13 @@ void testPIC16BitOriented() {
         {
             "BSF f, b (Set bit 3 in register)",
             "ORG 0x0000\nBSF 0x25, 3\nEND",
-            0x14A5,  // 0x1400 | (3 << 7) | 0x25
+            0x1625,  // 0x1400 | (3 << 9) | 0x25 - CORRECTED
             "Bit Set"
         },
         {
             "BTFSC f, b (Test bit 7)",
             "ORG 0x0000\nBTFSC 0x30, 7\nEND",
-            0x1CB0,  // 0x1800 | (7 << 7) | 0x30
+            0x1E30,  // 0x1800 | (7 << 9) | 0x30 - CORRECTED
             "Bit Test, Skip if Clear"
         },
         {
@@ -218,9 +218,9 @@ void testPIC16LiteralAndControl() {
         },
         {
             "IORLW k",
-            "ORG 0x0000\nIOLRW 0x0F\nEND",
+            "ORG 0x0000\nIORLW 0x0F\nEND",
             0x380F,  // 0x3800 | 0x0F
-            "OR W with literal"
+            "Inclusive OR W with literal"
         }
     };
 
