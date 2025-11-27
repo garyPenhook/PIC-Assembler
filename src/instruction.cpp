@@ -392,7 +392,131 @@ uint16_t InstructionSet::encodePIC18Instruction(InstructionType type, uint8_t f_
             opcode = Opcodes18::XORLW | (k_value & 0xFF);
             break;
 
-        // Additional PIC18 instructions (simplified encoding)
+        // Additional Byte-Oriented (PIC18)
+        case InstructionType::DCFSNZ:
+            opcode = Opcodes18::DCFSNZ | (d_bit << 8) | f_reg;
+            break;
+        case InstructionType::INFSNZ:
+            opcode = Opcodes18::INFSNZ | (d_bit << 8) | f_reg;
+            break;
+        case InstructionType::MOVFF:
+            // MOVFF has two file register operands (source and destination)
+            // Using f_reg as source, k_value bits as destination
+            opcode = Opcodes18::MOVFF | (k_value & 0x0FFF);
+            break;
+        case InstructionType::RLCF:
+            opcode = Opcodes18::RLCF | (d_bit << 8) | f_reg;
+            break;
+        case InstructionType::RLNCF:
+            opcode = Opcodes18::RLNCF | (d_bit << 8) | f_reg;
+            break;
+        case InstructionType::RRCF:
+            opcode = Opcodes18::RRCF | (d_bit << 8) | f_reg;
+            break;
+        case InstructionType::RRNCF:
+            opcode = Opcodes18::RRNCF | (d_bit << 8) | f_reg;
+            break;
+        case InstructionType::SUBFWB:
+            opcode = Opcodes18::SUBFWB | (d_bit << 8) | f_reg;
+            break;
+        case InstructionType::SUBWFB:
+            opcode = Opcodes18::SUBWFB | (d_bit << 8) | f_reg;
+            break;
+        case InstructionType::TSTFSZ:
+            opcode = Opcodes18::TSTFSZ | f_reg;
+            break;
+
+        // Compare & Skip (PIC18)
+        case InstructionType::CPFSEQ:
+            opcode = Opcodes18::CPFSEQ | f_reg;
+            break;
+        case InstructionType::CPFSGT:
+            opcode = Opcodes18::CPFSGT | f_reg;
+            break;
+        case InstructionType::CPFSLT:
+            opcode = Opcodes18::CPFSLT | f_reg;
+            break;
+
+        // Conditional Branch (PIC18)
+        case InstructionType::BC:
+            opcode = Opcodes18::BC | (k_value & 0xFF);
+            break;
+        case InstructionType::BN:
+            opcode = Opcodes18::BN | (k_value & 0xFF);
+            break;
+        case InstructionType::BNC:
+            opcode = Opcodes18::BNC | (k_value & 0xFF);
+            break;
+        case InstructionType::BNN:
+            opcode = Opcodes18::BNN | (k_value & 0xFF);
+            break;
+        case InstructionType::BNOV:
+            opcode = Opcodes18::BNOV | (k_value & 0xFF);
+            break;
+        case InstructionType::BNZ:
+            opcode = Opcodes18::BNZ | (k_value & 0xFF);
+            break;
+        case InstructionType::BOV:
+            opcode = Opcodes18::BOV | (k_value & 0xFF);
+            break;
+        case InstructionType::BRA:
+            opcode = Opcodes18::BRA | (k_value & 0x7FF);
+            break;
+        case InstructionType::BZ:
+            opcode = Opcodes18::BZ | (k_value & 0xFF);
+            break;
+
+        // Additional Control (PIC18)
+        case InstructionType::CALLW:
+            opcode = Opcodes18::CALLW;
+            break;
+        case InstructionType::DAW:
+            opcode = Opcodes18::DAW;
+            break;
+        case InstructionType::POP:
+            opcode = Opcodes18::POP;
+            break;
+        case InstructionType::PUSH:
+            opcode = Opcodes18::PUSH;
+            break;
+        case InstructionType::RCALL:
+            opcode = Opcodes18::RCALL | (k_value & 0x7FF);
+            break;
+        case InstructionType::RESET:
+            opcode = Opcodes18::RESET;
+            break;
+
+        // Literal Operations (PIC18)
+        case InstructionType::ADDFSR:
+            // ADDFSR f, k: f is FSR number (0-2), k is 8-bit
+            opcode = Opcodes18::ADDFSR | ((f_reg & 0x03) << 8) | (k_value & 0xFF);
+            break;
+        case InstructionType::LFSR:
+            // LFSR f, k: f is FSR number (0-2), k is 12-bit
+            opcode = Opcodes18::LFSR | ((f_reg & 0x03) << 12) | (k_value & 0xFFF);
+            break;
+        case InstructionType::MOVLB:
+            opcode = Opcodes18::MOVLB | (k_value & 0xFF);
+            break;
+        case InstructionType::MULLW:
+            opcode = Opcodes18::MULLW | (k_value & 0xFF);
+            break;
+        case InstructionType::SUBFSR:
+            // SUBFSR f, k: f is FSR number (0-2), k is 8-bit
+            opcode = Opcodes18::SUBFSR | ((f_reg & 0x03) << 8) | (k_value & 0xFF);
+            break;
+
+        // Table Operations (PIC18)
+        case InstructionType::TBLRD:
+            // TBLRD instruction with mode in lower bits
+            opcode = Opcodes18::TBLRD | (b_bit & 0x03);
+            break;
+        case InstructionType::TBLWT:
+            // TBLWT instruction with mode in lower bits
+            opcode = Opcodes18::TBLWT | (b_bit & 0x03);
+            break;
+
+        // Inherent
         case InstructionType::NOP:
             opcode = 0x0000;
             break;

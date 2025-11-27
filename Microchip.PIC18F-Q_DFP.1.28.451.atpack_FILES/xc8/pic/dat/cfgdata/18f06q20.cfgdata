@@ -1,0 +1,413 @@
+# Generated 24/03/2025 GMT
+
+# Copyright © 2025, Microchip Technology Inc. and its subsidiaries ("Microchip")
+# All rights reserved.
+# 
+# This software is developed by Microchip Technology Inc. and its subsidiaries ("Microchip").
+# 
+# Redistribution and use in source and binary forms, with or without modification, are
+# permitted provided that the following conditions are met:
+# 
+#     1. Redistributions of source code must retain the above copyright notice, this list of
+#        conditions and the following disclaimer.
+# 
+#     2. Redistributions in binary form must reproduce the above copyright notice, this list
+#        of conditions and the following disclaimer in the documentation and/or other
+#        materials provided with the distribution. Publication is not required when
+#        this file is used in an embedded application.
+# 
+#     3. Microchip's name may not be used to endorse or promote products derived from this
+#        software without specific prior written permission.
+# 
+# THIS SOFTWARE IS PROVIDED BY MICROCHIP "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+# INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+# PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL MICROCHIP BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING BUT NOT LIMITED TO
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWSOEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+# THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+# Microchip PIC18F06Q20 Configuration Word Definitions
+
+# File Syntax:
+# Each configuration register is given as:
+# 
+#     CWORD:<address>:<mask>:<default value>[:<name>[,<alias list>]]
+# 
+# for each CWORD the configuration settings are listed as
+# 
+#     CSETTING:<mask>:<name>[,<alias list>]:<description>
+# 
+# lastly for each CSETTING all possible values are listed as
+# 
+#     CVALUE:<value>:<name>[,<alias list>]:<description>
+# 
+# All numerical values are given in unqualified hex.  In terms of
+# #pragma config, note the following correspondence:
+# 
+#    #pragma config CSETTING<name> = CVALUE<name>
+# 
+# The compiler may also emit a message when it detects certain programming.
+# This behaviour is defined by the following record
+# 
+#     CMSG:<CSETTING name>=<CVALUE name>[,...]:<message number>
+# 
+# If the compiler encounters the given programming then it will emit the
+# with the corresponding numnber.  Note that these records must appear last
+# in the file.
+# 
+# Comments are also permitted.  Any line beginning with a '#'
+# character will be treated as a comment.
+
+CWORD:300000:77:FF:CONFIG1
+CSETTING:7:FEXTOSC:External Oscillator Selection
+CVALUE:0:HS_8MHZ:HS (crystal oscillator) up to 8 MHz
+CVALUE:1:HS_16MHZ:HS (crystal oscillator) up to 16 MHz
+CVALUE:2:HS_24MHZ:HS (crystal oscillator) up to 24 MHz
+CVALUE:3:HS_32MHZ:HS (crystal oscillator) up to 32 MHz
+CVALUE:4:OFF:Oscillator not enabled
+CVALUE:5:ECL:EC (external clock) below 500 kHz
+CVALUE:6:ECM:EC (external clock) for 500 kHz to 8 MHz
+CVALUE:7:ECH:EC (external clock) above 8 MHz
+CSETTING:70:RSTOSC:Reset Oscillator Selection
+CVALUE:0:HFINTOSC_64MHZ:HFINTOSC with HFFRQ = 64 MHz and CDIV = 1:1
+CVALUE:20:EXTOSC_4PLL:EXTOSC with 4x PLL, with EXTOSC operating per FEXTOSC bits
+CVALUE:40:SOSC:Secondary Oscillator
+CVALUE:50:LFINTOSC:Low-Frequency Oscillator
+CVALUE:60:HFINTOSC_1MHZ:HFINTOSC with HFFRQ = 4 MHz and CDIV = 4:1
+CVALUE:70:EXTOSC:EXTOSC operating per FEXTOSC bits (device manufacturing default)
+CWORD:300001:EF:FF:CONFIG2
+CSETTING:1:CLKOUTEN:Clock out Enable bit
+CVALUE:1:OFF:CLKOUT function is disabled
+CVALUE:0:ON:CLKOUT function is enabled
+CSETTING:2:PR1WAY:PRLOCKED One-Way Set Enable bit
+CVALUE:2:ON:PRLOCKED bit can be cleared and set only once
+CVALUE:0:OFF:PRLOCKED bit can be set and cleared repeatedly
+CSETTING:4:BBEN:Boot Block enable bit
+CVALUE:4:OFF:User PFM code protection disabled
+CVALUE:0:ON:User PFM code protection enabled
+CSETTING:8:CSWEN:Clock Switch Enable bit
+CVALUE:0:OFF:The NOSC and NDIV bits cannot be changed by user software
+CVALUE:8:ON:Writing to NOSC and NDIV is allowed
+CSETTING:20:FCMEN:Fail-Safe Clock Monitor Enable bit
+CVALUE:0:OFF:Fail-Safe Clock Monitor disabled
+CVALUE:20:ON:Fail-Safe Clock Monitor enabled
+CSETTING:40:FCMENP:Fail-Safe Clock Monitor - Primary XTAL Enable bit
+CVALUE:0:OFF:Fail-Safe Clock Monitor disabled
+CVALUE:40:ON:Fail-Safe Clock Monitor enabled; timer will flag FSCMP bit and OSFIF interrupt on EXTOSC failure.
+CSETTING:80:FCMENS:Fail-Safe Clock Monitor - Secondary XTAL Enable bit
+CVALUE:0:OFF:Fail-Safe Clock Monitor Disabled
+CVALUE:80:ON:Fail-Safe Clock Monitor enabled; timer will flag FSCMS bit and OSFIF interrupt on SOSC failure.
+CWORD:300002:FF:FF:CONFIG3
+CSETTING:1:MCLRE:MCLR Enable bit
+CVALUE:1:EXTMCLR:If LVP = 0, MCLR pin is MCLR; If LVP = 1, RE3 pin function is MCLR
+CVALUE:0:INTMCLR:If LVP = 0, MCLR pin function is port defined function; If LVP =1, RE3 pin fuction is MCLR
+CSETTING:6:PWRTS:Power-up timer selection bits
+CVALUE:6:PWRT_OFF:PWRT is disabled
+CVALUE:4:PWRT_64:PWRT set at 64ms
+CVALUE:2:PWRT_16:PWRT set at 16ms
+CVALUE:0:PWRT_1:PWRT set at 1ms
+CSETTING:8:MVECEN:Multi-vector enable bit
+CVALUE:8:ON:Multi-vector enabled, Vector table used for interrupts
+CVALUE:0:OFF:Interrupt contoller does not use vector table to prioritze interrupts
+CSETTING:10:IVT1WAY:IVTLOCK bit One-way set enable bit
+CVALUE:10:ON:IVTLOCKED bit can be cleared and set only once
+CVALUE:0:OFF:IVTLOCKED bit can be cleared and set repeatedly
+CSETTING:20:LPBOREN:Low Power BOR Enable bit
+CVALUE:20:OFF:Low-Power BOR disabled
+CVALUE:0:ON:Low-Power BOR enabled
+CSETTING:C0:BOREN:Brown-out Reset Enable bits
+CVALUE:C0:ON:Brown-out Reset enabled , SBOREN bit is ignored
+CVALUE:80:NOSLEEP:Brown-out Reset enabled while running, disabled in Sleep; SBOREN is ignored
+CVALUE:40:SBOREN:Brown-out Reset enabled according to SBOREN
+CVALUE:0:OFF:Brown-out Reset disabled
+CWORD:300003:FB:FF:CONFIG4
+CSETTING:3:BORV:Brown-out Reset Voltage Selection bits
+CVALUE:3:VBOR_1P9:Brown-out Reset Voltage (VBOR) set to 1.9V
+CVALUE:2:VBOR_2P45:Brown-out Reset Voltage (VBOR) set to 2.45V
+CVALUE:1:VBOR_2P7:Brown-out Reset Voltage (VBOR) set to 2.7V
+CVALUE:0:VBOR_2P85:Brown-out Reset Voltage (VBOR) set to 2.8V
+CSETTING:8:PPS1WAY:PPSLOCK bit One-Way Set Enable bit
+CVALUE:8:ON:PPSLOCKED bit can be cleared and set only once; PPS registers remain locked after one clear/set cycle
+CVALUE:0:OFF:PPSLOCKED bit can be set and cleared repeatedly (subject to the unlock sequence)
+CSETTING:10:STVREN:Stack Full/Underflow Reset Enable bit
+CVALUE:10:ON:Stack full/underflow will cause Reset
+CVALUE:0:OFF:Stack full/underflow will not cause Reset
+CSETTING:20:LVP:Low Voltage Programming Enable bit
+CVALUE:20:ON:Low voltage programming enabled. MCLR/VPP pin function is MCLR. MCLRE configuration bit is ignored
+CVALUE:0:OFF:HV on MCLR/VPP must be used for programming
+CSETTING:40:DEBUG:Debug enable bit
+CVALUE:40:OFF:Backround debugger disabled
+CVALUE:0:ON:Background debugger enabled
+CSETTING:80:XINST:Extended Instruction Set Enable bit
+CVALUE:80:OFF:Extended Instruction Set and Indexed Addressing Mode disabled
+CVALUE:0:ON:Extended Instruction Set and Indexed Addressing Mode enabled
+CWORD:300004:7F:FF:CONFIG5
+CSETTING:1F:WDTCPS:WDT Period selection bits
+CVALUE:0:WDTCPS_0:Divider ratio 1:32
+CVALUE:1:WDTCPS_1:Divider ratio 1:64
+CVALUE:2:WDTCPS_2:Divider ratio 1:128
+CVALUE:3:WDTCPS_3:Divider ratio 1:256
+CVALUE:4:WDTCPS_4:Divider ratio 1:512
+CVALUE:5:WDTCPS_5:Divider ratio 1:1024
+CVALUE:6:WDTCPS_6:Divider ratio 1:2048
+CVALUE:7:WDTCPS_7:Divider ratio 1:4096
+CVALUE:8:WDTCPS_8:Divider ratio 1:8192
+CVALUE:9:WDTCPS_9:Divider ratio 1:16384
+CVALUE:A:WDTCPS_10:Divider ratio 1:32768
+CVALUE:B:WDTCPS_11:Divider ratio 1:65536
+CVALUE:C:WDTCPS_12:Divider ratio 1:131072
+CVALUE:D:WDTCPS_13:Divider ratio 1:262144
+CVALUE:E:WDTCPS_14:Divider ratio 1:524299
+CVALUE:F:WDTCPS_15:Divider ratio 1:1048576
+CVALUE:10:WDTCPS_16:Divider ratio 1:2097152
+CVALUE:11:WDTCPS_17:Divider ratio 1:4194304
+CVALUE:12:WDTCPS_18:Divider ratio 1:8388608
+CVALUE:13:WDTCPS_19:Divider ratio 1:32
+CVALUE:14:WDTCPS_20:Divider ratio 1:32
+CVALUE:15:WDTCPS_21:Divider ratio 1:32
+CVALUE:16:WDTCPS_22:Divider ratio 1:32
+CVALUE:17:WDTCPS_23:Divider ratio 1:32
+CVALUE:18:WDTCPS_24:Divider ratio 1:32
+CVALUE:19:WDTCPS_25:Divider ratio 1:32
+CVALUE:1A:WDTCPS_26:Divider ratio 1:32
+CVALUE:1B:WDTCPS_27:Divider ratio 1:32
+CVALUE:1C:WDTCPS_28:Divider ratio 1:32
+CVALUE:1D:WDTCPS_29:Divider ratio 1:32
+CVALUE:1E:WDTCPS_30:Divider ratio 1:32
+CVALUE:1F:WDTCPS_31:Divider ratio 1:65536; software control of WDTPS
+CSETTING:60:WDTE:WDT operating mode
+CVALUE:0:OFF:WDT Disabled; SEN is ignored
+CVALUE:20:SEN:WDT enabled/disabled by SEN bit
+CVALUE:40:NSLEEP:WDT enabled while sleep=0, suspended when sleep=1; SEN ignored
+CVALUE:60:ON:WDT enabled regardless of sleep; SEN is ignored
+CWORD:300005:3F:FF:CONFIG6
+CSETTING:7:WDTCWS:WDT Window Select bits
+CVALUE:0:WDTCWS_0:window delay = 87.5; no software control; keyed access required
+CVALUE:1:WDTCWS_1:window delay = 75 percent of time; no software control; keyed access required
+CVALUE:2:WDTCWS_2:window delay = 62.5 percent of time; no software control; keyed access required
+CVALUE:3:WDTCWS_3:window delay = 50 percent of time; no software control; keyed access required
+CVALUE:4:WDTCWS_4:window delay = 37.5 percent of time; no software control; keyed access required
+CVALUE:5:WDTCWS_5:window delay = 25 percent of time; no software control; keyed access required
+CVALUE:6:WDTCWS_6:window always open (100%); no software control; keyed access required
+CVALUE:7:WDTCWS_7:window always open (100%); software control; keyed access not required
+CSETTING:38:WDTCCS:WDT input clock selector
+CVALUE:0:LFINTOSC:WDT reference clock is the 31.0 kHz LFINTOSC (when WDTE != 0b00)
+CVALUE:8:MFINTOSC:WDT reference clock is the 31.25kHz MFINTOSC output (when WDTE != 0b00)
+CVALUE:10:SOSC:WDT reference clock is SOSC (when WDTE != 0b00)
+CVALUE:38:SC:Software Control (when WDTE != 0b00)
+CWORD:300006:1:FF:CONFIG7
+CSETTING:1:VDDIO2MD:VDDIO2 supply mode bit
+CVALUE:1:STANDARD_RANGE:Standard Operating Range (VDDIO2 >= 1.62V)
+CVALUE:0:LOW_VOLTAGE_RANGE:Low-voltage Operating Range (VDDIO2 < 1.62V)
+CWORD:300007:FF:FF:CONFIG8
+CSETTING:FF:BBSIZE:Boot Block Size Selection bits
+CVALUE:7F:BBSIZE_16384:Boot Block size is 16384 words
+CVALUE:7E:BBSIZE_16256:Boot Block size is 16256 words
+CVALUE:7D:BBSIZE_16128:Boot Block size is 16128 words
+CVALUE:7C:BBSIZE_16000:Boot Block size is 16000 words
+CVALUE:7B:BBSIZE_15872:Boot Block size is 15872 words
+CVALUE:7A:BBSIZE_15744:Boot Block size is 15744 words
+CVALUE:79:BBSIZE_15616:Boot Block size is 15616 words
+CVALUE:78:BBSIZE_15488:Boot Block size is 15488 words
+CVALUE:77:BBSIZE_15360:Boot Block size is 15360 words
+CVALUE:76:BBSIZE_15232:Boot Block size is 15232 words
+CVALUE:75:BBSIZE_15104:Boot Block size is 15104 words
+CVALUE:74:BBSIZE_14976:Boot Block size is 14976 words
+CVALUE:73:BBSIZE_14848:Boot Block size is 14848 words
+CVALUE:72:BBSIZE_14720:Boot Block size is 14720 words
+CVALUE:71:BBSIZE_14592:Boot Block size is 14592 words
+CVALUE:70:BBSIZE_14464:Boot Block size is 14464 words
+CVALUE:6F:BBSIZE_14336:Boot Block size is 14336 words
+CVALUE:6E:BBSIZE_14208:Boot Block size is 14208 words
+CVALUE:6D:BBSIZE_14080:Boot Block size is 14080 words
+CVALUE:6C:BBSIZE_13952:Boot Block size is 13952 words
+CVALUE:6B:BBSIZE_13824:Boot Block size is 13824 words
+CVALUE:6A:BBSIZE_13696:Boot Block size is 13696 words
+CVALUE:69:BBSIZE_13568:Boot Block size is 13568 words
+CVALUE:68:BBSIZE_13440:Boot Block size is 13440 words
+CVALUE:67:BBSIZE_13312:Boot Block size is 13312 words
+CVALUE:66:BBSIZE_13184:Boot Block size is 13184 words
+CVALUE:65:BBSIZE_13056:Boot Block size is 13056 words
+CVALUE:64:BBSIZE_12928:Boot Block size is 12928 words
+CVALUE:63:BBSIZE_12800:Boot Block size is 12800 words
+CVALUE:62:BBSIZE_12672:Boot Block size is 12672 words
+CVALUE:61:BBSIZE_12544:Boot Block size is 12544 words
+CVALUE:60:BBSIZE_12416:Boot Block size is 12416 words
+CVALUE:5F:BBSIZE_12288:Boot Block size is 12288 words
+CVALUE:5E:BBSIZE_12160:Boot Block size is 12160 words
+CVALUE:5D:BBSIZE_12032:Boot Block size is 12032 words
+CVALUE:5C:BBSIZE_11904:Boot Block size is 11904 words
+CVALUE:5B:BBSIZE_11776:Boot Block size is 11776 words
+CVALUE:5A:BBSIZE_11648:Boot Block size is 11648 words
+CVALUE:59:BBSIZE_11520:Boot Block size is 11520 words
+CVALUE:58:BBSIZE_11392:Boot Block size is 11392 words
+CVALUE:57:BBSIZE_11264:Boot Block size is 11264 words
+CVALUE:56:BBSIZE_11136:Boot Block size is 11136 words
+CVALUE:55:BBSIZE_11008:Boot Block size is 11008 words
+CVALUE:54:BBSIZE_10880:Boot Block size is 10880 words
+CVALUE:53:BBSIZE_10752:Boot Block size is 10752 words
+CVALUE:52:BBSIZE_10624:Boot Block size is 10624 words
+CVALUE:51:BBSIZE_10496:Boot Block size is 10496 words
+CVALUE:50:BBSIZE_10368:Boot Block size is 10368 words
+CVALUE:4F:BBSIZE_10240:Boot Block size is 10240 words
+CVALUE:4E:BBSIZE_10112:Boot Block size is 10112 words
+CVALUE:4D:BBSIZE_9984:Boot Block size is 9984 words
+CVALUE:4C:BBSIZE_9856:Boot Block size is 9856 words
+CVALUE:4B:BBSIZE_9728:Boot Block size is 9728 words
+CVALUE:4A:BBSIZE_9600:Boot Block size is 9600 words
+CVALUE:49:BBSIZE_9472:Boot Block size is 9472 words
+CVALUE:48:BBSIZE_9344:Boot Block size is 9344 words
+CVALUE:47:BBSIZE_9216:Boot Block size is 9216 words
+CVALUE:46:BBSIZE_9088:Boot Block size is 9088 words
+CVALUE:45:BBSIZE_8960:Boot Block size is 8960 words
+CVALUE:44:BBSIZE_8832:Boot Block size is 8832 words
+CVALUE:43:BBSIZE_8704:Boot Block size is 8704 words
+CVALUE:42:BBSIZE_8576:Boot Block size is 8576 words
+CVALUE:41:BBSIZE_8448:Boot Block size is 8448 words
+CVALUE:40:BBSIZE_8320:Boot Block size is 8320 words
+CVALUE:3F:BBSIZE_8192:Boot Block size is 8192 words
+CVALUE:3E:BBSIZE_8064:Boot Block size is 8064 words
+CVALUE:3D:BBSIZE_7936:Boot Block size is 7936 words
+CVALUE:3C:BBSIZE_7808:Boot Block size is 7808 words
+CVALUE:3B:BBSIZE_7680:Boot Block size is 7680 words
+CVALUE:3A:BBSIZE_7552:Boot Block size is 7552 words
+CVALUE:39:BBSIZE_7424:Boot Block size is 7424 words
+CVALUE:38:BBSIZE_7296:Boot Block size is 7296 words
+CVALUE:37:BBSIZE_7168:Boot Block size is 7168 words
+CVALUE:36:BBSIZE_7040:Boot Block size is 7040 words
+CVALUE:35:BBSIZE_6912:Boot Block size is 6912 words
+CVALUE:34:BBSIZE_6784:Boot Block size is 6784 words
+CVALUE:33:BBSIZE_6656:Boot Block size is 6656 words
+CVALUE:32:BBSIZE_6528:Boot Block size is 6528 words
+CVALUE:31:BBSIZE_6400:Boot Block size is 6400 words
+CVALUE:30:BBSIZE_6272:Boot Block size is 6272 words
+CVALUE:2F:BBSIZE_6144:Boot Block size is 6144 words
+CVALUE:2E:BBSIZE_6016:Boot Block size is 6016 words
+CVALUE:2D:BBSIZE_5888:Boot Block size is 5888 words
+CVALUE:2C:BBSIZE_5760:Boot Block size is 5760 words
+CVALUE:2B:BBSIZE_5632:Boot Block size is 5632 words
+CVALUE:2A:BBSIZE_5504:Boot Block size is 5504 words
+CVALUE:29:BBSIZE_5376:Boot Block size is 5376 words
+CVALUE:28:BBSIZE_5248:Boot Block size is 5248 words
+CVALUE:27:BBSIZE_5120:Boot Block size is 5120 words
+CVALUE:26:BBSIZE_4992:Boot Block size is 4992 words
+CVALUE:25:BBSIZE_4864:Boot Block size is 4864 words
+CVALUE:24:BBSIZE_4736:Boot Block size is 4736 words
+CVALUE:23:BBSIZE_4608:Boot Block size is 4608 words
+CVALUE:22:BBSIZE_4480:Boot Block size is 4480 words
+CVALUE:21:BBSIZE_4352:Boot Block size is 4352 words
+CVALUE:20:BBSIZE_4224:Boot Block size is 4224 words
+CVALUE:1F:BBSIZE_4096:Boot Block size is 4096 words
+CVALUE:1E:BBSIZE_3968:Boot Block size is 3968 words
+CVALUE:1D:BBSIZE_3840:Boot Block size is 3840 words
+CVALUE:1C:BBSIZE_3712:Boot Block size is 3712 words
+CVALUE:1B:BBSIZE_3584:Boot Block size is 3584 words
+CVALUE:1A:BBSIZE_3456:Boot Block size is 3456 words
+CVALUE:19:BBSIZE_3328:Boot Block size is 3328 words
+CVALUE:18:BBSIZE_3200:Boot Block size is 3200 words
+CVALUE:17:BBSIZE_3072:Boot Block size is 3072 words
+CVALUE:16:BBSIZE_2944:Boot Block size is 2944 words
+CVALUE:15:BBSIZE_2816:Boot Block size is 2816 words
+CVALUE:14:BBSIZE_2688:Boot Block size is 2688 words
+CVALUE:13:BBSIZE_2560:Boot Block size is 2560 words
+CVALUE:12:BBSIZE_2432:Boot Block size is 2432 words
+CVALUE:11:BBSIZE_2304:Boot Block size is 2304 words
+CVALUE:10:BBSIZE_2176:Boot Block size is 2176 words
+CVALUE:F:BBSIZE_2048:Boot Block size is 2048 words
+CVALUE:E:BBSIZE_1920:Boot Block size is 1920 words
+CVALUE:D:BBSIZE_1792:Boot Block size is 1792 words
+CVALUE:C:BBSIZE_1664:Boot Block size is 1664 words
+CVALUE:B:BBSIZE_1536:Boot Block size is 1536 words
+CVALUE:A:BBSIZE_1408:Boot Block size is 1408 words
+CVALUE:9:BBSIZE_1280:Boot Block size is 1280 words
+CVALUE:8:BBSIZE_1152:Boot Block size is 1152 words
+CVALUE:7:BBSIZE_1024:Boot Block size is 1024 words
+CVALUE:6:BBSIZE_896:Boot Block size is 896 words
+CVALUE:5:BBSIZE_768:Boot Block size is 768 words
+CVALUE:4:BBSIZE_640:Boot Block size is 640 words
+CVALUE:3:BBSIZE_512:Boot Block size is 512 words
+CVALUE:2:BBSIZE_384:Boot Block size is 384 words
+CVALUE:1:BBSIZE_256:Boot Block size is 256 words
+CVALUE:0:BBSIZE_128:Boot Block size is 128 words
+CWORD:300008:8F:FF:CONFIG10
+CSETTING:1:WRTB:Boot Block Write Protection bit
+CVALUE:1:OFF:Boot Block is not write-protected
+CVALUE:0:ON:Boot Block is write-protected
+CSETTING:2:WRTC:Configuration Register Write Protection bit
+CVALUE:2:OFF:Configuration registers are not write-protected
+CVALUE:0:ON:Configuration registers are write-protected
+CSETTING:4:WRTD:Data EEPROM Write Protection bit
+CVALUE:4:OFF:Data EEPROM is not write-protected
+CVALUE:0:ON:Data EEPROM is write-protected
+CSETTING:8:WRTSAF:Storage Area Flash (SAF) Write Protection bit
+CVALUE:8:OFF:SAF is not write-protected
+CVALUE:0:ON:SAF is write-protected
+CSETTING:80:WRTAPP:Application Block Write Protection bit
+CVALUE:80:OFF:Application Block is not write-protected
+CVALUE:0:ON:Application Block is write-protected
+CWORD:300009:1:FF:CONFIG11
+CSETTING:1:CP:User Program Flash Memory (PFM) Code Protection bit
+CVALUE:1:OFF:User PFM code protection is disabled
+CVALUE:0:ON:User PFM code protection is enabled
+CWORD:30000A:1:FF:CONFIG12
+CSETTING:1:CPD:Data EEPROM Code Protection bit
+CVALUE:1:OFF:Data EEPROM code protection is disabled
+CVALUE:0:ON:Data EEPROM code protection is enabled
+CWORD:300018:1:FF:CONFIG14
+CSETTING:1:SAFLOCK:SAF Lock Enable bit
+CVALUE:1:OFF:SAF Lock disabled
+CVALUE:0:ON:SAF Lock enabled, SAF areas are locked and SAFSZ bits cannot be erased
+CWORD:300019:FF:FF:CONFIG9
+CSETTING:FF:SAFSZ:SAF Block Size Selection bits
+CVALUE:FF:SAFSZ_NONE:NONE
+CVALUE:FE:SAFSZ_128:Last 128 words of PFM; self write operation depends on WRTSAF and SAFLOCK bits
+CVALUE:FC:SAFSZ_256:Last 256 words of PFM; self write operation depends on WRTSAF and SAFLOCK bits
+CVALUE:F8:SAFSZ_384:Last 384 words of PFM; self write operation depends on WRTSAF and SAFLOCK bits
+CVALUE:F0:SAFSZ_512:Last 512 words of PFM; self write operation depends on WRTSAF and SAFLOCK bits
+CVALUE:E0:SAFSZ_640:Last 640 words of PFM; self write operation depends on WRTSAF and SAFLOCK bits
+CVALUE:C0:SAFSZ_768:Last 768 words of PFM; self write operation depends on WRTSAF and SAFLOCK bits
+CVALUE:80:SAFSZ_896:Last 896 words of PFM; self write operation depends on WRTSAF and SAFLOCK bits
+CVALUE:0:SAFSZ_1024:Last 1024 words of PFM; self write operation depends on WRTSAF and SAFLOCK bits
+CWORD:200000:FFFF:FFFF:IDLOC0
+CWORD:200002:FFFF:FFFF:IDLOC1
+CWORD:200004:FFFF:FFFF:IDLOC2
+CWORD:200006:FFFF:FFFF:IDLOC3
+CWORD:200008:FFFF:FFFF:IDLOC4
+CWORD:20000A:FFFF:FFFF:IDLOC5
+CWORD:20000C:FFFF:FFFF:IDLOC6
+CWORD:20000E:FFFF:FFFF:IDLOC7
+CWORD:200010:FFFF:FFFF:IDLOC8
+CWORD:200012:FFFF:FFFF:IDLOC9
+CWORD:200014:FFFF:FFFF:IDLOC10
+CWORD:200016:FFFF:FFFF:IDLOC11
+CWORD:200018:FFFF:FFFF:IDLOC12
+CWORD:20001A:FFFF:FFFF:IDLOC13
+CWORD:20001C:FFFF:FFFF:IDLOC14
+CWORD:20001E:FFFF:FFFF:IDLOC15
+CWORD:200020:FFFF:FFFF:IDLOC16
+CWORD:200022:FFFF:FFFF:IDLOC17
+CWORD:200024:FFFF:FFFF:IDLOC18
+CWORD:200026:FFFF:FFFF:IDLOC19
+CWORD:200028:FFFF:FFFF:IDLOC20
+CWORD:20002A:FFFF:FFFF:IDLOC21
+CWORD:20002C:FFFF:FFFF:IDLOC22
+CWORD:20002E:FFFF:FFFF:IDLOC23
+CWORD:200030:FFFF:FFFF:IDLOC24
+CWORD:200032:FFFF:FFFF:IDLOC25
+CWORD:200034:FFFF:FFFF:IDLOC26
+CWORD:200036:FFFF:FFFF:IDLOC27
+CWORD:200038:FFFF:FFFF:IDLOC28
+CWORD:20003A:FFFF:FFFF:IDLOC29
+CWORD:20003C:FFFF:FFFF:IDLOC30
+CWORD:20003E:FFFF:FFFF:IDLOC31
+CMSG:XINST=ON:1504
+CMSG:SAFSZ=SAFSZ_128:1604
+CMSG:SAFSZ=SAFSZ_256:1604
+CMSG:SAFSZ=SAFSZ_384:1604
+CMSG:SAFSZ=SAFSZ_512:1604
+CMSG:SAFSZ=SAFSZ_640:1604
+CMSG:SAFSZ=SAFSZ_768:1604
+CMSG:SAFSZ=SAFSZ_896:1604
+CMSG:SAFSZ=SAFSZ_1024:1604

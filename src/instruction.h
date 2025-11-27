@@ -214,5 +214,22 @@ namespace Opcodes18 {
     constexpr uint16_t MOVLW   = 0x0E00;
     constexpr uint16_t SUBLW   = 0x0800;
     constexpr uint16_t XORLW   = 0x0A00;
+
+    // Additional Literal Operations (PIC18)
+    constexpr uint16_t ADDFSR  = 0xE800;
+    constexpr uint16_t LFSR    = 0xEE00;
+    constexpr uint16_t MOVLB   = 0x0100;
+    constexpr uint16_t MULLW   = 0x0D00;
+    constexpr uint16_t SUBFSR  = 0xE900;
+
+    // Inherent/Special (PIC18)
+    constexpr uint16_t DAW     = 0x0007;
+    constexpr uint16_t POP     = 0x0006;
+    constexpr uint16_t PUSH    = 0x0005;
+    constexpr uint16_t RESET   = 0x00FF;
+
+    // Table Operations (PIC18)
+    constexpr uint16_t TBLRD   = 0x0800;
+    constexpr uint16_t TBLWT   = 0x0C00;
 }
 
