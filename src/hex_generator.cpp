@@ -65,18 +65,19 @@ std::string HexGenerator::createRecord(RecordType type, uint16_t address,
     return ss.str();
 }
 
-std::string HexGenerator::generateHex(const std::vector<AssembledCode>& code) {
+std::string HexGenerator::generateHex(const std::vector<AssembledCode>& code,
+                                       const std::vector<DataDefinition>& data) {
     std::stringstream result;
 
-    if (code.empty()) {
-        lastError = "No code to generate HEX from";
+    if (code.empty() && data.empty()) {
+        lastError = "No code or data to generate HEX from";
         return "";
     }
 
-    // Group instructions by address regions
-    uint32_t currentAddress = 0;
-    std::vector<uint8_t> currentData;
+    // Create a combined list of all items sorted by address
+    std::vector<std::pair<uint32_t, std::vector<uint8_t>>> items;
 
+    // Add instructions
     for (const auto& item : code) {
         // Convert word address to byte address for PIC16
         // PIC16: word-addressed (each word = 2 bytes)
@@ -84,6 +85,34 @@ std::string HexGenerator::generateHex(const std::vector<AssembledCode>& code) {
         uint32_t byteAddress = (targetArch == Architecture::PIC16)
             ? item.address * 2
             : item.address;
+
+        // For PIC16, each instruction is 14 bits, but stored as 16-bit words
+        // Low byte first (little-endian)
+        uint8_t lowByte = item.instruction & 0xFF;
+        uint8_t highByte = (item.instruction >> 8) & 0xFF;
+
+        std::vector<uint8_t> instrData{lowByte, highByte};
+        items.push_back({byteAddress, instrData});
+    }
+
+    // Add data definitions
+    for (const auto& dataDef : data) {
+        uint32_t byteAddress = (targetArch == Architecture::PIC16)
+            ? dataDef.address * 2
+            : dataDef.address;
+        items.push_back({byteAddress, dataDef.bytes});
+    }
+
+    // Sort items by address
+    std::sort(items.begin(), items.end(),
+              [](const auto& a, const auto& b) { return a.first < b.first; });
+
+    // Write items to HEX format
+    uint32_t currentAddress = 0;
+    std::vector<uint8_t> currentData;
+
+    for (const auto& item : items) {
+        uint32_t byteAddress = item.first;
 
         if (byteAddress != currentAddress && !currentData.empty()) {
             // Write current record
@@ -94,20 +123,17 @@ std::string HexGenerator::generateHex(const std::vector<AssembledCode>& code) {
 
         currentAddress = byteAddress;
 
-        // For PIC16, each instruction is 14 bits, but stored as 16-bit words
-        // Low byte first (little-endian)
-        uint8_t lowByte = item.instruction & 0xFF;
-        uint8_t highByte = (item.instruction >> 8) & 0xFF;
+        // Add data bytes
+        for (uint8_t byte : item.second) {
+            currentData.push_back(byte);
+        }
 
-        currentData.push_back(lowByte);
-        currentData.push_back(highByte);
-
-        currentAddress += 2;
+        currentAddress += item.second.size();
     }
 
     // Write remaining data
     if (!currentData.empty()) {
-        std::string record = createRecord(RecordType::DATA, (currentAddress - 2) & 0xFFFF, currentData);
+        std::string record = createRecord(RecordType::DATA, (currentAddress - currentData.size()) & 0xFFFF, currentData);
         result << record << "\n";
     }
 
@@ -119,9 +145,10 @@ std::string HexGenerator::generateHex(const std::vector<AssembledCode>& code) {
 }
 
 bool HexGenerator::writeToFile(const std::string& filename,
-                               const std::vector<AssembledCode>& code) {
+                               const std::vector<AssembledCode>& code,
+                               const std::vector<DataDefinition>& data) {
     try {
-        std::string hexContent = generateHex(code);
+        std::string hexContent = generateHex(code, data);
 
         if (hexContent.empty()) {
             lastError = "Failed to generate HEX content";

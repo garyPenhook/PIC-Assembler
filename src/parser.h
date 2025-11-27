@@ -8,6 +8,10 @@
 #include <string>
 #include <stdexcept>
 #include <memory>
+#include <cstdint>
+
+// Forward declaration to avoid circular include
+struct DataDefinition;
 
 struct ParsedInstruction {
     InstructionType type;
@@ -44,6 +48,9 @@ public:
     // First pass: collect all labels and populate symbol table
     void firstPass();
 
+    // Get parsed data definitions
+    const std::vector<DataDefinition>& getDataDefinitions() const { return dataDefinitions; }
+
     // Get symbol table after parsing
     const SymbolTable& getSymbolTable() const { return symbolTable; }
 
@@ -58,6 +65,7 @@ private:
     uint16_t programCounter;
     ErrorReporter errorReporter;
     Architecture currentArch;
+    std::vector<DataDefinition> dataDefinitions;
 
     // Helper functions
     Token& current();
@@ -78,6 +86,7 @@ private:
     void handleEQU(const std::string& label, const std::string& value);
     void handleBANKSEL(const std::string& label, std::vector<ParsedInstruction>& instructions);
     void handlePAGESEL(const std::string& label, std::vector<ParsedInstruction>& instructions);
+    void handleDataDirective(const std::string& directiveName);
 
     // Validation
     void validateOperands(ParsedInstruction& instr);

@@ -10,11 +10,13 @@ public:
     // Constructor with architecture
     explicit HexGenerator(Architecture arch = Architecture::PIC16);
 
-    // Generate Intel HEX format from assembled code
-    std::string generateHex(const std::vector<AssembledCode>& code);
+    // Generate Intel HEX format from assembled code and data
+    std::string generateHex(const std::vector<AssembledCode>& code,
+                          const std::vector<DataDefinition>& data = {});
 
     // Write hex to file
-    bool writeToFile(const std::string& filename, const std::vector<AssembledCode>& code);
+    bool writeToFile(const std::string& filename, const std::vector<AssembledCode>& code,
+                     const std::vector<DataDefinition>& data = {});
 
     // Get last error
     const std::string& getLastError() const { return lastError; }

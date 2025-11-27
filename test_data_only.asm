@@ -1,0 +1,7 @@
+; Test program with only data definitions
+    ORG 0x1000
+
+    DB 0x11, 0x22, 0x33, 0x44
+    DW 0x5555, 0x6666
+
+    END

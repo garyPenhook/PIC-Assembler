@@ -64,7 +64,9 @@ bool Lexer::isMnemonic(const std::string& str) const {
 
 bool Lexer::isDirective(const std::string& str) const {
     static const std::vector<std::string> directives = {
-        "ORG", "END", "EQU", "INCLUDE", "DEFINE", "IFDEF", "ENDIF"
+        "ORG", "END", "EQU", "INCLUDE", "DEFINE", "IFDEF", "ENDIF",
+        "DB", "DW", "DA", "DATA", "PROCESSOR", "__CONFIG", "CONFIG",
+        "BANKSEL", "PAGESEL", "UDATA", "CODE"
     };
     auto upper = str;
     std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);

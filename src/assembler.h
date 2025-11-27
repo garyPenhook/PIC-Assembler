@@ -40,6 +40,9 @@ public:
     // Get generated machine code
     const std::vector<AssembledCode>& getCode() const { return generatedCode; }
 
+    // Get generated data definitions
+    const std::vector<DataDefinition>& getDataDefinitions() const { return generatedData; }
+
     // Get target architecture
     Architecture getArchitecture() const { return targetArch; }
 
@@ -60,6 +63,7 @@ public:
 
 private:
     std::vector<AssembledCode> generatedCode;
+    std::vector<DataDefinition> generatedData;
     std::string lastError;
     bool successful;
     Architecture targetArch;

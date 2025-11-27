@@ -15,6 +15,7 @@ Assembler::Assembler(Architecture arch)
 
 std::vector<AssembledCode> Assembler::assemble(const std::string& source) {
     generatedCode.clear();
+    generatedData.clear();
     successful = false;
 
     try {
@@ -34,6 +35,9 @@ std::vector<AssembledCode> Assembler::assemble(const std::string& source) {
             setError("Parsing failed with " + std::to_string(parser.getErrorReporter().getErrorCount()) + " error(s)");
             return {};
         }
+
+        // Store data definitions from parser
+        generatedData = parser.getDataDefinitions();
 
         // Code generation
         InstructionSet& iset = InstructionSet::getInstance();

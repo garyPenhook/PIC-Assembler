@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "assembler.h"
 #include <sstream>
 #include <algorithm>
 #include <cctype>
@@ -378,54 +379,87 @@ void Parser::handleEQU(const std::string& label, const std::string& value) {
     symbolTable.addConstant(label, val);
 }
 
+void Parser::handleDataDirective(const std::string& directiveName) {
+    // Create a DataDefinition at current program counter
+    DataDefinition dataDef;
+    dataDef.address = programCounter;
+    dataDef.sourceCode = directiveName;
+    dataDef.lineNumber = current().line;
+
+    // Parse all data values separated by commas
+    advance();  // Skip the directive keyword itself
+    int byteCount = 0;
+
+    while (!check(TokenType::END_OF_FILE) && !check(TokenType::MNEMONIC) &&
+           !check(TokenType::DIRECTIVE) && !check(TokenType::IDENTIFIER)) {
+
+        if (check(TokenType::DECIMAL_NUMBER) || check(TokenType::HEX_NUMBER)) {
+            uint16_t value = parseNumber(current().value);
+            // For DB, store as single byte; for DW/DA, store as two bytes (little-endian)
+            if (directiveName == "DB") {
+                dataDef.bytes.push_back(value & 0xFF);
+                byteCount += 1;
+            } else {  // DW, DA, or DATA
+                dataDef.bytes.push_back(value & 0xFF);
+                dataDef.bytes.push_back((value >> 8) & 0xFF);
+                byteCount += 2;
+            }
+            advance();
+        } else if (check(TokenType::COMMA)) {
+            advance();  // Skip comma
+        } else {
+            break;  // End of data values
+        }
+    }
+
+    // Add data definition to collection
+    if (!dataDef.bytes.empty()) {
+        dataDefinitions.push_back(dataDef);
+        // Advance program counter by number of words used
+        // PIC16: Each word is 2 bytes
+        programCounter += (byteCount + 1) / 2;  // Round up
+    }
+}
+
 void Parser::parseDirective(const Token& directive) {
     std::string dirName = directive.value;
     std::transform(dirName.begin(), dirName.end(), dirName.begin(), ::toupper);
 
     if (dirName == "ORG") {
+        // ORG address
+        // Current position is at ORG token, peek at next token
+        advance();  // Move to the address value
         if (check(TokenType::DECIMAL_NUMBER) || check(TokenType::HEX_NUMBER)) {
             handleORG(current().value);
-            advance();
+            advance();  // Move past the address value
+            // Now currentPos points to the token after the address
         }
+        // Back up one position so the main loop can advance
+        if (currentPos > 0) currentPos--;
     } else if (dirName == "END") {
-        // End of assembly
+        // End of assembly - nothing to do
     } else if (dirName == "DB" || dirName == "DW" || dirName == "DA" || dirName == "DATA") {
-        // Data definition directive - handled elsewhere (not generating instructions here)
-        // Just skip the directive and its arguments for now
-        advance();  // Skip the directive itself
-        while (!check(TokenType::END_OF_FILE) && !check(TokenType::MNEMONIC) &&
-               !check(TokenType::DIRECTIVE) && !check(TokenType::IDENTIFIER)) {
-            if (check(TokenType::COMMA)) {
-                advance();
-            } else if (check(TokenType::DECIMAL_NUMBER) || check(TokenType::HEX_NUMBER)) {
-                advance();
-            } else {
-                break;
-            }
-        }
+        // Data definition directive
+        handleDataDirective(dirName);
+        // Back up one position so the main loop can advance
+        if (currentPos > 0) currentPos--;
     } else if (dirName == "PROCESSOR") {
         // PROCESSOR deviceName - set target device
-        advance();  // Skip PROCESSOR keyword
+        advance();  // Skip to device name
         if (check(TokenType::IDENTIFIER)) {
-            std::string deviceName = current().value;
-            // Store device name for later use
-            advance();
+            advance();  // Skip past device name
         }
+        // Back up one position
+        if (currentPos > 0) currentPos--;
     } else if (dirName == "__CONFIG" || dirName == "CONFIG") {
         // Configuration directive - skip for now
-        advance();  // Skip the directive
-        while (!check(TokenType::END_OF_FILE) && !check(TokenType::COMMA) &&
-               !check(TokenType::MNEMONIC) && !check(TokenType::DIRECTIVE) &&
-               !check(TokenType::IDENTIFIER)) {
+        advance();  // Move past directive
+        while (!check(TokenType::END_OF_FILE) && !check(TokenType::MNEMONIC) &&
+               !check(TokenType::DIRECTIVE) && !check(TokenType::IDENTIFIER)) {
             advance();
         }
-        if (check(TokenType::COMMA)) {
-            advance();
-            while (!check(TokenType::END_OF_FILE) && !check(TokenType::MNEMONIC) &&
-                   !check(TokenType::DIRECTIVE) && !check(TokenType::IDENTIFIER)) {
-                advance();
-            }
-        }
+        // Back up one position
+        if (currentPos > 0) currentPos--;
     }
 }
 
@@ -452,7 +486,7 @@ void Parser::firstPass() {
         // Check for directives
         if (check(TokenType::DIRECTIVE)) {
             parseDirective(current());
-            advance();
+            advance();  // Skip past the directive and its operands
             continue;
         }
 
@@ -496,7 +530,7 @@ std::vector<ParsedInstruction> Parser::parse() {
         // Check for directives
         if (check(TokenType::DIRECTIVE)) {
             parseDirective(current());
-            advance();
+            advance();  // Skip past the directive and its operands
             continue;
         }
 
