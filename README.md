@@ -37,7 +37,17 @@ A modern, standards-compliant assembler for Microchip® PIC® microcontrollers w
 ⚡ **Performance**
 - Compiled with C++23 standard
 - -O3 optimization for fast assembly
-- Single-pass assembly
+- Two-pass assembly with forward label support
+
+🔧 **Multiple Development Workflows**
+- Command-line assembly for quick prototyping
+- Makefile integration for larger projects
+- IDE integration (MPLAB X, VS Code, CLion)
+- Simulation and debugging support
+- Hardware programmer compatibility (MPLAB-IPE, pk3cmd, etc.)
+- Batch processing and CI/CD automation
+- Cross-architecture development support
+- Embedded project integration
 
 ## Supported Operating Systems
 
@@ -203,6 +213,350 @@ Examples:
   gnsasm program.asm -o firmware.hex
   gnsasm program.asm -a pic18 -o firmware.hex --verbose
 ```
+
+## Development Workflows and Options
+
+GnSasm supports multiple development approaches for programming PIC microcontrollers. This section explains each workflow and how to integrate GnSasm into your development pipeline.
+
+### 1. **Command-Line Development**
+
+The simplest approach: write assembly, assemble, and program.
+
+#### Workflow:
+```bash
+# Write your assembly code
+vi program.asm
+
+# Assemble to HEX
+gnsasm program.asm -a pic16 -o firmware.hex
+
+# Program using external tool (MPLAB-IPE, pickit, etc.)
+# Example with pickit command-line tool:
+pk3cmd -P firmware.hex -F
+```
+
+#### Best For:
+- Simple programs
+- Quick prototyping
+- Direct hardware programming
+- CI/CD pipelines
+
+### 2. **Make-Based Build System**
+
+Integrate GnSasm into a Makefile for automated assembly and programming.
+
+#### Example Makefile:
+```makefile
+# Assembler and programmer settings
+ASSEMBLER = gnsasm
+ARCH = pic16
+PROGRAMMER = pk3cmd
+DEVICE = PIC16F18076
+
+# Source and output files
+SOURCES = main.asm
+OBJECTS = $(SOURCES:.asm=.hex)
+TARGETS = $(SOURCES:.asm=.hex)
+
+.PHONY: all clean program
+
+all: $(TARGETS)
+
+# Assemble rule
+%.hex: %.asm
+	$(ASSEMBLER) $< -a $(ARCH) -o $@
+
+# Program device
+program: $(TARGETS)
+	$(PROGRAMMER) -P $< -F
+
+clean:
+	rm -f $(TARGETS)
+```
+
+#### Usage:
+```bash
+make                    # Assemble all files
+make program            # Assemble and program device
+make clean              # Clean build artifacts
+```
+
+#### Best For:
+- Larger projects
+- Reproducible builds
+- One-command compilation and programming
+- Version control friendly
+
+### 3. **IDE Integration (MPLAB X / CLion / VS Code)**
+
+Use GnSasm as a custom tool within your IDE.
+
+#### MPLAB X Integration:
+1. **Create a new project** (File → New Project)
+2. **Configure custom toolchain:**
+   - Tools → Options → Build Tools
+   - Create new tool: `gnsasm -a pic16 -o ${OUTPUT_FILE} ${INPUT_FILE}`
+3. **Set GnSasm as assembler** in Project Properties
+
+#### VS Code Integration:
+
+Create `.vscode/tasks.json`:
+```json
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Assemble PIC16",
+      "type": "shell",
+      "command": "gnsasm",
+      "args": [
+        "${file}",
+        "-a", "pic16",
+        "-o", "${fileDirname}/${fileBasenameNoExtension}.hex",
+        "--verbose"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": {
+        "owner": "gnsasm",
+        "fileLocation": ["relative", "${workspaceFolder}"],
+        "pattern": {
+          "regexp": "^\\[(error|warning)\\]\\s+Line\\s+(\\d+).*$",
+          "file": 1,
+          "line": 2
+        }
+      }
+    }
+  ]
+}
+```
+
+#### Best For:
+- Professional development
+- Real-time error feedback
+- Integration with IDE debugging tools
+- Team projects
+
+### 4. **Simulation and Debugging**
+
+Use GnSasm output with PIC simulators for testing before hardware programming.
+
+#### Simulation Workflow:
+```bash
+# 1. Assemble program
+gnsasm program.asm -a pic16 -o firmware.hex
+
+# 2. Load into MPLAB SIM simulator
+#    File → Open → firmware.hex
+#    Debug → Run
+```
+
+#### Supported Simulators:
+- **MPLAB SIM** - Free simulator included with MPLAB X
+- **Proteus** - Hardware simulation with PIC models
+- **PICsim Plus** - Specialized PIC simulator
+- **Custom Simulators** - Any tool supporting Intel HEX format
+
+#### Debugging Tips:
+- Use labels to track execution flow
+- Set breakpoints at critical sections
+- Verify register contents at each step
+- Test edge cases before hardware
+
+#### Best For:
+- Algorithm validation
+- Debugging complex logic
+- Testing without hardware
+- Education and learning
+
+### 5. **Hardware Programming**
+
+Use GnSasm output with PIC programmers.
+
+#### Compatible Programmers:
+- **MPLAB-IPE** (Integrated Programming Environment)
+  ```bash
+  gnsasm program.asm -o firmware.hex
+  # Then use MPLAB-IPE GUI or CLI
+  ```
+
+- **pk3cmd** (MPLAB PICkit 3)
+  ```bash
+  gnsasm program.asm -a pic16 -o firmware.hex
+  pk3cmd -P firmware.hex -F
+  ```
+
+- **picprogrammer** (Universal programmer support)
+  ```bash
+  gnsasm program.asm -o firmware.hex
+  picprogrammer -d PIC16F18076 -f firmware.hex
+  ```
+
+- **Custom/DIY Programmers** - Any tool supporting Intel HEX format
+
+#### Workflow:
+```bash
+# 1. Assemble program
+gnsasm program.asm -a pic16 -o firmware.hex --verbose
+
+# 2. Verify output
+hexdump -C firmware.hex | head -20
+
+# 3. Program device
+# Using your preferred programmer...
+```
+
+#### Best For:
+- Final deployment
+- Production programming
+- Hardware testing
+- Device validation
+
+### 6. **Batch Processing and CI/CD**
+
+Automate assembly for multiple files or continuous integration.
+
+#### Batch Assembly Script:
+```bash
+#!/bin/bash
+# batch_assemble.sh
+
+ARCH="${1:-pic16}"
+OUTPUT_DIR="build"
+
+mkdir -p "$OUTPUT_DIR"
+
+for asm_file in *.asm; do
+    hex_file="$OUTPUT_DIR/${asm_file%.asm}.hex"
+    echo "Assembling: $asm_file → $hex_file"
+
+    if gnsasm "$asm_file" -a "$ARCH" -o "$hex_file" --verbose; then
+        echo "✓ Success: $asm_file"
+    else
+        echo "✗ Failed: $asm_file"
+        exit 1
+    fi
+done
+
+echo "All files assembled successfully!"
+```
+
+#### GitHub Actions Example:
+```yaml
+name: PIC Assembly Build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install GnSasm
+        run: |
+          git clone https://github.com/garyPenhook/PIC-Assembler.git
+          cd PIC-Assembler
+          cmake -B build
+          cmake --build build
+          sudo cp build/gnsasm /usr/local/bin/
+
+      - name: Assemble programs
+        run: |
+          for file in *.asm; do
+            gnsasm "$file" -a pic16 -o "${file%.asm}.hex" --verbose
+          done
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: hex-files
+          path: "*.hex"
+```
+
+#### Best For:
+- Large projects with multiple files
+- Automated testing pipelines
+- Version control integration
+- Team development
+
+### 7. **Cross-Architecture Development**
+
+Develop and test code for multiple PIC families.
+
+#### Multi-Target Build:
+```bash
+#!/bin/bash
+
+PROGRAM="firmware.asm"
+ARCHITECTURES=("pic12" "pic16" "pic18")
+
+for arch in "${ARCHITECTURES[@]}"; do
+    output="${arch}/${PROGRAM%.asm}.hex"
+    mkdir -p "$arch"
+
+    echo "Building for $arch..."
+    if gnsasm "$PROGRAM" -a "$arch" -o "$output" 2>/dev/null; then
+        echo "✓ $arch build successful"
+    else
+        echo "✗ $arch build failed"
+    fi
+done
+```
+
+#### Best For:
+- Portable code
+- Product lines spanning multiple architectures
+- Testing architecture compatibility
+
+### 8. **Embedded Project Management**
+
+Use GnSasm within larger embedded projects with mixed languages.
+
+#### Example Project Structure:
+```
+project/
+├── Makefile
+├── CMakeLists.txt
+├── firmware/
+│   ├── startup.asm          # GnSasm (startup code)
+│   ├── bootloader.asm       # GnSasm (bootloader)
+│   ├── drivers/
+│   │   ├── uart.c           # C code (optional)
+│   │   └── spi.c            # C code (optional)
+│   └── main/
+│       └── application.asm   # GnSasm (main app)
+├── scripts/
+│   ├── assemble.sh          # Assembly automation
+│   └── program.sh           # Device programming
+└── docs/
+    └── architecture.md
+```
+
+#### Makefile Integration:
+```makefile
+# Mixed C and Assembly project
+ASM_FILES = firmware/startup.asm firmware/bootloader.asm
+ASM_OBJS = $(ASM_FILES:.asm=.hex)
+C_FILES = firmware/drivers/*.c
+C_OBJS = $(C_FILES:.c=.o)
+
+firmware.hex: $(ASM_OBJS) $(C_OBJS)
+	# Link everything together
+	arm-none-eabi-gcc -o firmware.elf $(C_OBJS) $(ASM_OBJS)
+	arm-none-eabi-objcopy -O ihex firmware.elf firmware.hex
+
+%.hex: %.asm
+	gnsasm $< -a pic16 -o $@
+```
+
+#### Best For:
+- Complex embedded systems
+- Mixed language projects
+- Large teams
+- Professional products
 
 ## Usage Guide
 
@@ -652,12 +1006,14 @@ gdb ./gnsasm
 Planned features for future releases:
 - [ ] Macro support
 - [ ] Conditional assembly (#ifdef, #endif)
-- [ ] Listing file generation (.lst)
-- [ ] Symbol export for debugging
+- [ ] Listing file generation (.lst) with symbol cross-references
+- [ ] Symbol export for debugging (ELF format)
 - [ ] Extended instruction sets (PIC24, dsPIC)
 - [ ] C preprocessor integration
-- [ ] Multi-pass assembly for forward references
-- [ ] IDE integration plugins
+- [ ] IDE integration plugins (Visual Studio Code, CLion)
+- [ ] Advanced data directives (align, fill, reserve)
+- [ ] Section support (.text, .data, .bss)
+- [ ] Linker script support for memory layout control
 
 ## Legal Disclaimer
 
@@ -692,20 +1048,34 @@ For issues, questions, or suggestions:
 
 ## Version History
 
-**v1.2 (Current)**
+**v1.2+ (Current - In Development)**
+- ✅ Fixed DB/DW data directive output in HEX files
+  - Resolved data duplication in two-pass assembly
+  - Fixed address calculation for merged HEX records
+  - Verified program counter advancement for mixed data types
+- ✅ Added PIC12 baseline instruction set support (12-bit encoding)
+- ✅ Implemented two-pass assembly for forward label references
+- Support for 8 different development workflows (CLI, Make, IDE, Simulation, etc.)
+- Comprehensive documentation for PIC programming options
+
+**v1.2**
 - Renamed executable to `gnsasm`
 - Complete PIC18 instruction set implementation (54+ instructions)
 - All instructions fully encoded and tested
+- Intel HEX output generation with proper checksums
+- Memory usage statistics display
 
 **v1.1**
 - Added PIC®18-Q40 support
 - Comprehensive error reporting system
 - Architecture validation
+- MPASM®-compatible directives (ORG, EQU, END)
 
 **v1.0**
 - Initial release
 - PIC®16F18076 support
 - MPASM®-compatible syntax
+- 35 PIC16 instructions fully supported
 
 ## Credits
 
