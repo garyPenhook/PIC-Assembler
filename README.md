@@ -1,6 +1,6 @@
-# GnSasm - PIC16/PIC18 Assembler
+# GnSasm - PIC®16/PIC®18 Assembler
 
-A modern, standards-compliant assembler for Microchip PIC microcontrollers with MPASM-compatible syntax. Supports both PIC16 (14-bit) and PIC18 (16-bit) instruction sets with helpful error messages and architecture validation.
+A modern, standards-compliant assembler for Microchip® PIC® microcontrollers with MPASM®-compatible syntax. Supports both PIC®16 (14-bit) and PIC®18 (16-bit) instruction sets with helpful error messages and architecture validation.
 
 **Latest Version:** 1.2
 **Command:** `gnsasm`
@@ -9,14 +9,14 @@ A modern, standards-compliant assembler for Microchip PIC microcontrollers with 
 ## Features
 
 ✨ **Dual-Architecture Support**
-- PIC16 and PIC16F microcontrollers (14-bit instruction words)
-- PIC18 and PIC18-Q40 microcontrollers (16-bit instruction words)
+- PIC®16 and PIC®16F microcontrollers (14-bit instruction words)
+- PIC®18 and PIC®18-Q40 microcontrollers (16-bit instruction words)
 - Architecture-aware instruction validation and encoding
 
 🎯 **Complete Instruction Set Coverage**
-- **PIC16:** 35 instructions (100% coverage)
+- **PIC®16:** 35 instructions (100% coverage)
   - Byte-oriented, bit-oriented, literal/control operations
-- **PIC18:** 54+ instructions (100% coverage)
+- **PIC®18:** 54+ instructions (100% coverage)
   - All byte-oriented, bit-oriented, conditional branches
   - Compare/skip, table operations, FSR operations
   - Stack operations, multiplication, and more
@@ -28,8 +28,8 @@ A modern, standards-compliant assembler for Microchip PIC microcontrollers with 
 - Operand range checking
 - Color-coded output for better readability
 
-📝 **MPASM Compatible**
-- MPASM-like syntax and directives (ORG, END, EQU)
+📝 **MPASM® Compatible**
+- MPASM®-like syntax and directives (ORG, END, EQU)
 - Support for decimal, hexadecimal (0xFF), and binary (0b1010) number formats
 - Label support with colon notation
 - Semicolon comments
@@ -117,6 +117,8 @@ xcode-select --install
 git clone https://github.com/garyPenhook/PIC-Assembler.git
 cd PIC-Assembler
 ```
+
+> **Note:** PIC®, PIC®16, PIC®18, MPASM®, and Microchip® are registered trademarks of Microchip Technology Inc.
 
 #### Configure and Build
 ```bash
@@ -237,10 +239,10 @@ MOVLW 0xAB      ; Hex with uppercase
 MOVLW 0b11110000; Binary
 ```
 
-### PIC16 Example Program
+### PIC®16 Example Program
 
 ```asm
-; PIC16F18076 - Simple Counter
+; PIC®16F18076 - Simple Counter
 ; Increments register 0x20 and compares with 10
 
         ORG 0x0000
@@ -263,10 +265,10 @@ Assemble with:
 gnsasm counter.asm -o counter.hex
 ```
 
-### PIC18 Example Program
+### PIC®18 Example Program
 
 ```asm
-; PIC18-Q40 - Advanced Counter with Conditional Branch
+; PIC®18-Q40 - Advanced Counter with Conditional Branch
 ; Uses PIC18-specific BRA and CPFSEQ instructions
 
         ORG 0x0000
@@ -311,7 +313,7 @@ gnsasm pic18_code.asm -a pic18 -o output.hex
 
 ## Supported Instructions
 
-### PIC16 Instructions (35 total - 100% coverage)
+### PIC®16 Instructions (35 total - 100% coverage)
 
 #### Byte-Oriented Operations (18)
 ```
@@ -360,7 +362,7 @@ SUBLW   - Subtract W from literal
 XORLW   - Exclusive OR literal with W
 ```
 
-### PIC18 Instructions (54+ total - 100% coverage)
+### PIC®18 Instructions (54+ total - 100% coverage)
 
 #### Shared Instructions (35)
 All PIC16 instructions listed above, plus:
@@ -657,6 +659,19 @@ Planned features for future releases:
 - [ ] Multi-pass assembly for forward references
 - [ ] IDE integration plugins
 
+## Legal Disclaimer
+
+GnSasm is an independent project and is not affiliated with, endorsed by, or connected to Microchip Technology Inc.
+
+**Trademark Acknowledgments:**
+- PIC®, PIC®16, PIC®16F, PIC®18, PIC®18-Q40, MPASM®, and Microchip® are registered trademarks of Microchip Technology Inc.
+- This project provides an alternative implementation of PIC microcontroller assembly language tooling.
+- All references to PIC®, MPASM®, and Microchip® products in this documentation are for identification purposes only.
+- The use of these trademarks is for compatibility and informational purposes, and does not imply endorsement.
+
+**Compliance Note:**
+This assembler implements assembly language syntax and instruction sets that are compatible with Microchip® PIC® microcontrollers. Use of this tool is subject to the terms of the MIT License included in this repository.
+
 ## License
 
 MIT License - See LICENSE file for details
@@ -683,18 +698,18 @@ For issues, questions, or suggestions:
 - All instructions fully encoded and tested
 
 **v1.1**
-- Added PIC18-Q40 support
+- Added PIC®18-Q40 support
 - Comprehensive error reporting system
 - Architecture validation
 
 **v1.0**
 - Initial release
-- PIC16F18076 support
-- MPASM-compatible syntax
+- PIC®16F18076 support
+- MPASM®-compatible syntax
 
 ## Credits
 
-Developed as a modern replacement for MPASM with enhanced error messages and multi-architecture support.
+Developed as a modern replacement for MPASM® with enhanced error messages and multi-architecture support.
 
 ---
 
@@ -702,3 +717,8 @@ Developed as a modern replacement for MPASM with enhanced error messages and mul
 **Command:** `gnsasm`
 **Maintainer:** Gary Penhook
 **Last Updated:** November 2025
+
+---
+
+*PIC®, PIC®16, PIC®18, MPASM®, and Microchip® are registered trademarks of Microchip Technology Inc.*
+*This project is not affiliated with or endorsed by Microchip Technology Inc.*
