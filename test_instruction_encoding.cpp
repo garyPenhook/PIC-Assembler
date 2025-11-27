@@ -636,17 +636,17 @@ void testPIC16ByteOrientedExtended() {
     printTestHeader("PIC16 BYTE-ORIENTED - EXTENDED");
 
     std::vector<TestCase> tests = {
-        {"ANDWF f, d", "ORG 0x0000\nANDWF 0x20, 1\nEND", 0x0520, "AND W with f"},
-        {"COMF f, d", "ORG 0x0000\nCOMF 0x20, 1\nEND", 0x0920, "Complement f"},
-        {"DECF f, d", "ORG 0x0000\nDECF 0x20, 1\nEND", 0x0320, "Decrement f"},
-        {"DECFSZ f, d", "ORG 0x0000\nDECFSZ 0x20, 1\nEND", 0x0B20, "Decrement f, skip if zero"},
-        {"INCFSZ f, d", "ORG 0x0000\nINCFSZ 0x20, 1\nEND", 0x0F20, "Increment f, skip if zero"},
-        {"IORWF f, d", "ORG 0x0000\nIORWF 0x20, 1\nEND", 0x0420, "OR W with f"},
-        {"RLF f, d", "ORG 0x0000\nRLF 0x20, 1\nEND", 0x0D20, "Rotate left f through Carry"},
-        {"RRF f, d", "ORG 0x0000\nRRF 0x20, 1\nEND", 0x0C20, "Rotate right f through Carry"},
-        {"SUBWF f, d", "ORG 0x0000\nSUBWF 0x20, 1\nEND", 0x0220, "Subtract W from f"},
-        {"SWAPF f, d", "ORG 0x0000\nSWAPF 0x20, 1\nEND", 0x0E20, "Swap nibbles of f"},
-        {"XORWF f, d", "ORG 0x0000\nXORWF 0x20, 1\nEND", 0x0620, "XOR W with f"},
+        {"ANDWF f, d", "ORG 0x0000\nANDWF 0x20, 1\nEND", 0x05A0, "AND W with f"},
+        {"COMF f, d", "ORG 0x0000\nCOMF 0x20, 1\nEND", 0x09A0, "Complement f"},
+        {"DECF f, d", "ORG 0x0000\nDECF 0x20, 1\nEND", 0x03A0, "Decrement f"},
+        {"DECFSZ f, d", "ORG 0x0000\nDECFSZ 0x20, 1\nEND", 0x0BA0, "Decrement f, skip if zero"},
+        {"INCFSZ f, d", "ORG 0x0000\nINCFSZ 0x20, 1\nEND", 0x0FA0, "Increment f, skip if zero"},
+        {"IORWF f, d", "ORG 0x0000\nIORWF 0x20, 1\nEND", 0x04A0, "OR W with f"},
+        {"RLF f, d", "ORG 0x0000\nRLF 0x20, 1\nEND", 0x0DA0, "Rotate left f through Carry"},
+        {"RRF f, d", "ORG 0x0000\nRRF 0x20, 1\nEND", 0x0CA0, "Rotate right f through Carry"},
+        {"SUBWF f, d", "ORG 0x0000\nSUBWF 0x20, 1\nEND", 0x02A0, "Subtract W from f"},
+        {"SWAPF f, d", "ORG 0x0000\nSWAPF 0x20, 1\nEND", 0x0EA0, "Swap nibbles of f"},
+        {"XORWF f, d", "ORG 0x0000\nXORWF 0x20, 1\nEND", 0x06A0, "XOR W with f"},
         {"CLRW", "ORG 0x0000\nCLRW\nEND", 0x0100, "Clear W register"},
         {"NOP", "ORG 0x0000\nNOP\nEND", 0x0000, "No operation"}
     };
@@ -675,12 +675,12 @@ void testPIC16ControlExtended() {
 
     std::vector<TestCase> tests = {
         {"CALL addr", "ORG 0x0000\nCALL 0x100\nEND", 0x2100, "Call subroutine"},
-        {"GOTO addr", "ORG 0x0000\nGOTO 0x200\nEND", 0x2800, "Unconditional branch"},
+        {"GOTO addr", "ORG 0x0000\nGOTO 0x200\nEND", 0x2A00, "Unconditional branch"},
         {"RETURN", "ORG 0x0000\nRETURN\nEND", 0x0008, "Return from subroutine"},
         {"RETFIE", "ORG 0x0000\nRETFIE\nEND", 0x0009, "Return from interrupt"},
         {"RETLW k", "ORG 0x0000\nRETLW 0x42\nEND", 0x3442, "Return with literal in W"},
-        {"SLEEP", "ORG 0x0000\nSLEEP\nEND", 0x0003, "Go into sleep mode"},
-        {"CLRWDT", "ORG 0x0000\nCLRWDT\nEND", 0x0004, "Clear watchdog timer"},
+        {"SLEEP", "ORG 0x0000\nSLEEP\nEND", 0x0063, "Go into sleep mode"},
+        {"CLRWDT", "ORG 0x0000\nCLRWDT\nEND", 0x0064, "Clear watchdog timer"},
         {"XORLW k", "ORG 0x0000\nXORLW 0xFF\nEND", 0x3AFF, "XOR W with literal"}
     };
 
