@@ -451,12 +451,196 @@ void testPIC18LiteralAndControl() {
     std::cout << "PIC18 Literal/Control Tests: " << passed << " passed, " << failed << " failed\n";
 }
 
+// Test PIC12 byte-oriented instructions
+void testPIC12ByteOriented() {
+    printTestHeader("PIC12 BYTE-ORIENTED INSTRUCTION ENCODING");
+
+    std::vector<TestCase> tests = {
+        {
+            "ADDWF f, d (PIC12)",
+            "ORG 0x0000\nADDWF 0x20, 1\nEND",
+            0x07A0,  // 0x0700 | (1 << 7) | 0x20
+            "Add W to file register 0x20, store in f"
+        },
+        {
+            "MOVWF f (PIC12)",
+            "ORG 0x0000\nMOVWF 0x25\nEND",
+            0x00A5,  // 0x0080 | 0x25
+            "Move W to file register 0x25"
+        },
+        {
+            "MOVF f, d (d=0, PIC12)",
+            "ORG 0x0000\nMOVF 0x20, 0\nEND",
+            0x0820,  // 0x0800 | (0 << 7) | 0x20
+            "Move file register to W"
+        },
+        {
+            "CLRF f (PIC12)",
+            "ORG 0x0000\nCLRF 0x30\nEND",
+            0x01B0,  // 0x0180 | 0x30
+            "Clear file register 0x30"
+        }
+    };
+
+    Assembler assembler(Architecture::PIC12);
+    int passed = 0, failed = 0;
+
+    for (const auto& test : tests) {
+        auto code = assembler.assemble(test.code);
+
+        if (!code.empty()) {
+            uint16_t actual = code[0].instruction;
+            bool pass = (actual == test.expectedOpcode);
+
+            if (pass) passed++;
+            else failed++;
+
+            std::cout << "\n" << test.name << "\n";
+            std::cout << "  Description: " << test.description << "\n";
+            printTestResult(pass, "Opcode Match",
+                hexFormat(test.expectedOpcode),
+                hexFormat(actual));
+        } else {
+            failed++;
+            std::cout << "\n✗ FAIL: " << test.name << "\n";
+            std::cout << "  Error: " << assembler.getLastError() << "\n";
+        }
+    }
+
+    std::cout << "\n" << std::string(70, '-') << "\n";
+    std::cout << "PIC12 Byte-Oriented Tests: " << passed << " passed, " << failed << " failed\n";
+}
+
+// Test PIC12 bit-oriented instructions
+void testPIC12BitOriented() {
+    printTestHeader("PIC12 BIT-ORIENTED INSTRUCTION ENCODING");
+
+    std::vector<TestCase> tests = {
+        {
+            "BCF f, b (PIC12)",
+            "ORG 0x0000\nBCF 0x20, 0\nEND",
+            0x1020,  // 0x1000 | (0 << 7) | 0x20
+            "Bit Clear"
+        },
+        {
+            "BSF f, b (PIC12)",
+            "ORG 0x0000\nBSF 0x25, 3\nEND",
+            0x15A5,  // 0x1400 | (3 << 7) | 0x25 - CORRECTED
+            "Bit Set"
+        },
+        {
+            "BTFSC f, b (PIC12)",
+            "ORG 0x0000\nBTFSC 0x30, 7\nEND",
+            0x1BB0,  // 0x1800 | (7 << 7) | 0x30 - CORRECTED
+            "Bit Test, Skip if Clear"
+        },
+        {
+            "BTFSS f, b (PIC12)",
+            "ORG 0x0000\nBTFSS 0x40, 0\nEND",
+            0x1C40,  // 0x1C00 | (0 << 7) | 0x40
+            "Bit Test, Skip if Set"
+        }
+    };
+
+    Assembler assembler(Architecture::PIC12);
+    int passed = 0, failed = 0;
+
+    for (const auto& test : tests) {
+        auto code = assembler.assemble(test.code);
+
+        if (!code.empty()) {
+            uint16_t actual = code[0].instruction;
+            bool pass = (actual == test.expectedOpcode);
+
+            if (pass) passed++;
+            else failed++;
+
+            std::cout << "\n" << test.name << "\n";
+            std::cout << "  Description: " << test.description << "\n";
+            printTestResult(pass, "Opcode Match",
+                hexFormat(test.expectedOpcode),
+                hexFormat(actual));
+        } else {
+            failed++;
+            std::cout << "\n✗ FAIL: " << test.name << "\n";
+            std::cout << "  Error: " << assembler.getLastError() << "\n";
+        }
+    }
+
+    std::cout << "\n" << std::string(70, '-') << "\n";
+    std::cout << "PIC12 Bit-Oriented Tests: " << passed << " passed, " << failed << " failed\n";
+}
+
+// Test PIC12 literal and control instructions
+void testPIC12LiteralAndControl() {
+    printTestHeader("PIC12 LITERAL AND CONTROL INSTRUCTION ENCODING");
+
+    std::vector<TestCase> tests = {
+        {
+            "MOVLW k (PIC12)",
+            "ORG 0x0000\nMOVLW 0x42\nEND",
+            0x3042,  // 0x3000 | 0x42
+            "Load literal into W register"
+        },
+        {
+            "ADDLW k (PIC12)",
+            "ORG 0x0000\nADDLW 0x55\nEND",
+            0x3E55,  // 0x3E00 | 0x55
+            "Add literal to W"
+        },
+        {
+            "SUBLW k (PIC12)",
+            "ORG 0x0000\nSUBLW 0x10\nEND",
+            0x3C10,  // 0x3C00 | 0x10
+            "Subtract W from literal"
+        },
+        {
+            "ANDLW k (PIC12)",
+            "ORG 0x0000\nANDLW 0xFF\nEND",
+            0x39FF,  // 0x3900 | 0xFF
+            "AND W with literal"
+        }
+    };
+
+    Assembler assembler(Architecture::PIC12);
+    int passed = 0, failed = 0;
+
+    for (const auto& test : tests) {
+        auto code = assembler.assemble(test.code);
+
+        if (!code.empty()) {
+            uint16_t actual = code[0].instruction;
+            bool pass = (actual == test.expectedOpcode);
+
+            if (pass) passed++;
+            else failed++;
+
+            std::cout << "\n" << test.name << "\n";
+            std::cout << "  Description: " << test.description << "\n";
+            printTestResult(pass, "Opcode Match",
+                hexFormat(test.expectedOpcode),
+                hexFormat(actual));
+        } else {
+            failed++;
+            std::cout << "\n✗ FAIL: " << test.name << "\n";
+            std::cout << "  Error: " << assembler.getLastError() << "\n";
+        }
+    }
+
+    std::cout << "\n" << std::string(70, '-') << "\n";
+    std::cout << "PIC12 Literal/Control Tests: " << passed << " passed, " << failed << " failed\n";
+}
+
 int main() {
     std::cout << "\n" << std::string(70, '=') << "\n";
     std::cout << "PIC INSTRUCTION ENCODING VERIFICATION TEST SUITE\n";
     std::cout << std::string(70, '=') << "\n";
     std::cout << "This test suite verifies correct instruction encoding against\n";
     std::cout << "Microchip PIC16F/PIC18 datasheet specifications\n";
+
+    testPIC12ByteOriented();
+    testPIC12BitOriented();
+    testPIC12LiteralAndControl();
 
     testPIC16ByteOriented();
     testPIC16BitOriented();
