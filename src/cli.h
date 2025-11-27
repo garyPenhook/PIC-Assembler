@@ -2,14 +2,16 @@
 
 #include <string>
 #include <vector>
+#include "instruction.h"
 
 struct CLIOptions {
     std::string inputFile;
     std::string outputFile;
-    bool verbose;
-    bool generateListing;
-    bool showHelp;
-    bool showVersion;
+    Architecture architecture = Architecture::PIC16;
+    bool verbose = false;
+    bool generateListing = false;
+    bool showHelp = false;
+    bool showVersion = false;
 };
 
 class CommandLineInterface {

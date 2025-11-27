@@ -43,11 +43,19 @@ void Lexer::skipComment() {
 
 bool Lexer::isMnemonic(const std::string& str) const {
     static const std::vector<std::string> mnemonics = {
+        // PIC16/PIC18 Shared
         "ADDWF", "ANDWF", "CLRF", "CLRW", "COMF", "DECF", "DECFSZ", "INCF", "INCFSZ",
         "IORWF", "MOVF", "MOVWF", "NOP", "RLF", "RRF", "SUBWF", "SWAPF", "XORWF",
         "BCF", "BSF", "BTFSC", "BTFSS",
         "ADDLW", "ANDLW", "CALL", "CLRWDT", "GOTO", "IORLW", "MOVLW", "RETFIE",
-        "RETLW", "RETURN", "SLEEP", "SUBLW", "XORLW"
+        "RETLW", "RETURN", "SLEEP", "SUBLW", "XORLW",
+
+        // PIC18 Specific
+        "ADDWFC", "DCFSNZ", "INFSNZ", "MOVFF", "MULWF", "NEGF", "RLCF", "RLNCF", "RRCF", "RRNCF",
+        "SETF", "SUBFWB", "SUBWFB", "TSTFSZ", "BTG", "CPFSEQ", "CPFSGT", "CPFSLT",
+        "BC", "BN", "BNC", "BNN", "BNOV", "BNZ", "BOV", "BRA", "BZ",
+        "CALLW", "RCALL", "DAW", "POP", "PUSH", "RESET",
+        "ADDFSR", "LFSR", "MOVLB", "MULLW", "SUBFSR", "TBLRD", "TBLWT"
     };
     auto upper = str;
     std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);

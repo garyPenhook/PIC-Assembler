@@ -4,6 +4,12 @@
 #include "instruction.h"
 #include <iostream>
 
+Assembler::Assembler(Architecture arch)
+    : successful(false), targetArch(arch) {
+    // Set the architecture in the instruction set
+    InstructionSet::getInstance().setArchitecture(arch);
+}
+
 std::vector<AssembledCode> Assembler::assemble(const std::string& source) {
     generatedCode.clear();
     successful = false;

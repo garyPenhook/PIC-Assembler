@@ -39,6 +39,7 @@ int main(int argc, const char* argv[]) {
         // Read source file
         if (options.verbose) {
             std::cout << "Reading: " << options.inputFile << "\n";
+            std::cout << "Target: " << (options.architecture == Architecture::PIC16 ? "PIC16" : "PIC18") << "\n";
         }
         std::string source = readFile(options.inputFile);
 
@@ -46,7 +47,7 @@ int main(int argc, const char* argv[]) {
         if (options.verbose) {
             std::cout << "Assembling...\n";
         }
-        Assembler assembler;
+        Assembler assembler(options.architecture);
         std::vector<AssembledCode> code = assembler.assemble(source);
 
         if (!assembler.wasSuccessful()) {
