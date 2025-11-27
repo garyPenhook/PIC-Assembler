@@ -19,12 +19,29 @@ enum class InstructionType {
     // Bit-Oriented Operations
     BCF, BSF, BTFSC, BTFSS,
 
-    // Literal and Control Operations (PIC16)
+    // Literal and Control Operations (PIC16/PIC16E)
     ADDLW, ANDLW, CALL, CLRWDT, GOTO, IORLW, MOVLW, RETFIE, RETLW, RETURN, SLEEP, SUBLW, XORLW,
 
+    // ========== PIC16 ENHANCED & PIC18 SHARED ==========
+    // Carry variants (exist in both PIC16E and PIC18)
+    ADDWFC,
+
+    // ========== PIC16 ENHANCED MID-RANGE ONLY (cpu_mid_v10) ==========
+    // Shift Instructions (PIC16 Enhanced only)
+    LSLF, LSRF, ASRF,
+
+    // Branch (PIC16 Enhanced only)
+    BRW,
+
+    // Indirect Addressing (PIC16 Enhanced only)
+    MOVIW, MOVWI,
+
+    // Literal Operations (PIC16 Enhanced only)
+    MOVLP,
+
     // ========== PIC18 SPECIFIC ==========
-    // Additional Byte-Oriented (PIC18)
-    ADDWFC, DCFSNZ, INFSNZ, MOVFF, MULWF, NEGF, RLCF, RLNCF, RRCF, RRNCF, SETF, SUBFWB, SUBWFB, TSTFSZ,
+    // Additional Byte-Oriented (PIC18 only)
+    DCFSNZ, INFSNZ, MOVFF, MULWF, NEGF, RLCF, RLNCF, RRCF, RRNCF, SETF, SUBFWB, SUBWFB, TSTFSZ,
 
     // Additional Bit-Oriented (PIC18)
     BTG,
@@ -98,8 +115,8 @@ private:
                                     uint8_t b_bit, uint16_t k_value) const;
 };
 
-// Opcode constants - PIC16 (14-bit values)
-namespace Opcodes16 {
+// Opcode constants - PIC16 Classic Mid-Range (14-bit values)
+namespace Opcodes16Classic {
     // Byte-Oriented (format: 11ddaaffffffff where dd=dest, aa=opcode, ffffff=file reg)
     constexpr uint16_t ADDWF  = 0x0700;  // 11 0100 ff ffff ff
     constexpr uint16_t ANDWF  = 0x0500;
@@ -140,6 +157,27 @@ namespace Opcodes16 {
     constexpr uint16_t SLEEP  = 0x0063;
     constexpr uint16_t SUBLW  = 0x3C00;
     constexpr uint16_t XORLW  = 0x3A00;
+}
+
+// Opcode constants - PIC16 Enhanced Mid-Range (14-bit values, cpu_mid_v10)
+namespace Opcodes16Enhanced {
+    // Shift Instructions (14-bit, PIC16 Enhanced only)
+    constexpr uint16_t LSLF   = 0x3600;  // Logical shift left file
+    constexpr uint16_t LSRF   = 0x3E00;  // Logical shift right file
+    constexpr uint16_t ASRF   = 0x3800;  // Arithmetic shift right file
+
+    // Branch (14-bit, PIC16 Enhanced only)
+    constexpr uint16_t BRW    = 0x000B;  // Branch using W
+
+    // Indirect Addressing (14-bit, with mode bits, PIC16 Enhanced only)
+    constexpr uint16_t MOVIW  = 0x0100;  // Move indirect to W
+    constexpr uint16_t MOVWI  = 0x0900;  // Move W to indirect
+
+    // Literal Operations (PIC16 Enhanced only)
+    constexpr uint16_t MOVLP  = 0x3100;  // Move literal to PCLATH
+
+    // Note: ADDWFC, MOVLB, SUBWFB, BRA, ADDFSR exist in both PIC16E and PIC18
+    // but with different encodings - see their definitions above in Opcodes16Classic
 }
 
 // Opcode constants - PIC18 (16-bit values)

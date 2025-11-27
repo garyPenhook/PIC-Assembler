@@ -38,7 +38,7 @@ void InstructionSet::initializeMnemonics() {
     mnemonicMap["BTFSC"] = InstructionType::BTFSC;
     mnemonicMap["BTFSS"] = InstructionType::BTFSS;
 
-    // Literal and Control Operations (PIC16)
+    // Literal and Control Operations (PIC16/PIC16E)
     mnemonicMap["ADDLW"] = InstructionType::ADDLW;
     mnemonicMap["ANDLW"] = InstructionType::ANDLW;
     mnemonicMap["CALL"] = InstructionType::CALL;
@@ -53,9 +53,27 @@ void InstructionSet::initializeMnemonics() {
     mnemonicMap["SUBLW"] = InstructionType::SUBLW;
     mnemonicMap["XORLW"] = InstructionType::XORLW;
 
+    // ========== PIC16 ENHANCED MID-RANGE ONLY ==========
+    // Shift Instructions
+    mnemonicMap["LSLF"] = InstructionType::LSLF;
+    mnemonicMap["LSRF"] = InstructionType::LSRF;
+    mnemonicMap["ASRF"] = InstructionType::ASRF;
+
+    // Branch
+    mnemonicMap["BRW"] = InstructionType::BRW;
+
+    // Indirect Addressing
+    mnemonicMap["MOVIW"] = InstructionType::MOVIW;
+    mnemonicMap["MOVWI"] = InstructionType::MOVWI;
+
+    // Literal Operations
+    mnemonicMap["MOVLP"] = InstructionType::MOVLP;
+
+    // ========== PIC16 ENHANCED & PIC18 SHARED ==========
+    mnemonicMap["ADDWFC"] = InstructionType::ADDWFC;
+
     // ========== PIC18 SPECIFIC ==========
     // Additional Byte-Oriented (PIC18)
-    mnemonicMap["ADDWFC"] = InstructionType::ADDWFC;
     mnemonicMap["DCFSNZ"] = InstructionType::DCFSNZ;
     mnemonicMap["INFSNZ"] = InstructionType::INFSNZ;
     mnemonicMap["MOVFF"] = InstructionType::MOVFF;
@@ -168,113 +186,113 @@ uint16_t InstructionSet::encodePIC16Instruction(InstructionType type, uint8_t f_
     switch (type) {
         // Byte-Oriented Operations: 11ddaaffffffff
         case InstructionType::ADDWF:
-            opcode = Opcodes16::ADDWF | (d_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::ADDWF | (d_bit << 7) | f_reg;
             break;
         case InstructionType::ANDWF:
-            opcode = Opcodes16::ANDWF | (d_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::ANDWF | (d_bit << 7) | f_reg;
             break;
         case InstructionType::CLRF:
-            opcode = Opcodes16::CLRF | f_reg;
+            opcode = Opcodes16Classic::CLRF | f_reg;
             break;
         case InstructionType::CLRW:
-            opcode = Opcodes16::CLRW;
+            opcode = Opcodes16Classic::CLRW;
             break;
         case InstructionType::COMF:
-            opcode = Opcodes16::COMF | (d_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::COMF | (d_bit << 7) | f_reg;
             break;
         case InstructionType::DECF:
-            opcode = Opcodes16::DECF | (d_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::DECF | (d_bit << 7) | f_reg;
             break;
         case InstructionType::DECFSZ:
-            opcode = Opcodes16::DECFSZ | (d_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::DECFSZ | (d_bit << 7) | f_reg;
             break;
         case InstructionType::INCF:
-            opcode = Opcodes16::INCF | (d_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::INCF | (d_bit << 7) | f_reg;
             break;
         case InstructionType::INCFSZ:
-            opcode = Opcodes16::INCFSZ | (d_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::INCFSZ | (d_bit << 7) | f_reg;
             break;
         case InstructionType::IORWF:
-            opcode = Opcodes16::IORWF | (d_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::IORWF | (d_bit << 7) | f_reg;
             break;
         case InstructionType::MOVF:
-            opcode = Opcodes16::MOVF | (d_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::MOVF | (d_bit << 7) | f_reg;
             break;
         case InstructionType::MOVWF:
-            opcode = Opcodes16::MOVWF | f_reg;
+            opcode = Opcodes16Classic::MOVWF | f_reg;
             break;
         case InstructionType::NOP:
-            opcode = Opcodes16::NOP;
+            opcode = Opcodes16Classic::NOP;
             break;
         case InstructionType::RLF:
-            opcode = Opcodes16::RLF | (d_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::RLF | (d_bit << 7) | f_reg;
             break;
         case InstructionType::RRF:
-            opcode = Opcodes16::RRF | (d_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::RRF | (d_bit << 7) | f_reg;
             break;
         case InstructionType::SUBWF:
-            opcode = Opcodes16::SUBWF | (d_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::SUBWF | (d_bit << 7) | f_reg;
             break;
         case InstructionType::SWAPF:
-            opcode = Opcodes16::SWAPF | (d_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::SWAPF | (d_bit << 7) | f_reg;
             break;
         case InstructionType::XORWF:
-            opcode = Opcodes16::XORWF | (d_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::XORWF | (d_bit << 7) | f_reg;
             break;
 
         // Bit-Oriented Operations: 10bbbffffffff
         case InstructionType::BCF:
-            opcode = Opcodes16::BCF | (b_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::BCF | (b_bit << 7) | f_reg;
             break;
         case InstructionType::BSF:
-            opcode = Opcodes16::BSF | (b_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::BSF | (b_bit << 7) | f_reg;
             break;
         case InstructionType::BTFSC:
-            opcode = Opcodes16::BTFSC | (b_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::BTFSC | (b_bit << 7) | f_reg;
             break;
         case InstructionType::BTFSS:
-            opcode = Opcodes16::BTFSS | (b_bit << 7) | f_reg;
+            opcode = Opcodes16Classic::BTFSS | (b_bit << 7) | f_reg;
             break;
 
         // Literal and Control Operations: xxxkkkkkkkkkkkk
         case InstructionType::ADDLW:
-            opcode = Opcodes16::ADDLW | (k_value & 0xFF);
+            opcode = Opcodes16Classic::ADDLW | (k_value & 0xFF);
             break;
         case InstructionType::ANDLW:
-            opcode = Opcodes16::ANDLW | (k_value & 0xFF);
+            opcode = Opcodes16Classic::ANDLW | (k_value & 0xFF);
             break;
         case InstructionType::CALL:
-            opcode = Opcodes16::CALL | (k_value & 0x7FF);
+            opcode = Opcodes16Classic::CALL | (k_value & 0x7FF);
             break;
         case InstructionType::CLRWDT:
-            opcode = Opcodes16::CLRWDT;
+            opcode = Opcodes16Classic::CLRWDT;
             break;
         case InstructionType::GOTO:
-            opcode = Opcodes16::GOTO | (k_value & 0x7FF);
+            opcode = Opcodes16Classic::GOTO | (k_value & 0x7FF);
             break;
         case InstructionType::IORLW:
-            opcode = Opcodes16::IORLW | (k_value & 0xFF);
+            opcode = Opcodes16Classic::IORLW | (k_value & 0xFF);
             break;
         case InstructionType::MOVLW:
-            opcode = Opcodes16::MOVLW | (k_value & 0xFF);
+            opcode = Opcodes16Classic::MOVLW | (k_value & 0xFF);
             break;
         case InstructionType::RETFIE:
-            opcode = Opcodes16::RETFIE;
+            opcode = Opcodes16Classic::RETFIE;
             break;
         case InstructionType::RETLW:
-            opcode = Opcodes16::RETLW | (k_value & 0xFF);
+            opcode = Opcodes16Classic::RETLW | (k_value & 0xFF);
             break;
         case InstructionType::RETURN:
-            opcode = Opcodes16::RETURN;
+            opcode = Opcodes16Classic::RETURN;
             break;
         case InstructionType::SLEEP:
-            opcode = Opcodes16::SLEEP;
+            opcode = Opcodes16Classic::SLEEP;
             break;
         case InstructionType::SUBLW:
-            opcode = Opcodes16::SUBLW | (k_value & 0xFF);
+            opcode = Opcodes16Classic::SUBLW | (k_value & 0xFF);
             break;
         case InstructionType::XORLW:
-            opcode = Opcodes16::XORLW | (k_value & 0xFF);
+            opcode = Opcodes16Classic::XORLW | (k_value & 0xFF);
             break;
 
         default:

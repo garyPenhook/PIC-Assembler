@@ -389,6 +389,43 @@ void Parser::parseDirective(const Token& directive) {
         }
     } else if (dirName == "END") {
         // End of assembly
+    } else if (dirName == "DB" || dirName == "DW" || dirName == "DA" || dirName == "DATA") {
+        // Data definition directive - handled elsewhere (not generating instructions here)
+        // Just skip the directive and its arguments for now
+        advance();  // Skip the directive itself
+        while (!check(TokenType::END_OF_FILE) && !check(TokenType::MNEMONIC) &&
+               !check(TokenType::DIRECTIVE) && !check(TokenType::IDENTIFIER)) {
+            if (check(TokenType::COMMA)) {
+                advance();
+            } else if (check(TokenType::DECIMAL_NUMBER) || check(TokenType::HEX_NUMBER)) {
+                advance();
+            } else {
+                break;
+            }
+        }
+    } else if (dirName == "PROCESSOR") {
+        // PROCESSOR deviceName - set target device
+        advance();  // Skip PROCESSOR keyword
+        if (check(TokenType::IDENTIFIER)) {
+            std::string deviceName = current().value;
+            // Store device name for later use
+            advance();
+        }
+    } else if (dirName == "__CONFIG" || dirName == "CONFIG") {
+        // Configuration directive - skip for now
+        advance();  // Skip the directive
+        while (!check(TokenType::END_OF_FILE) && !check(TokenType::COMMA) &&
+               !check(TokenType::MNEMONIC) && !check(TokenType::DIRECTIVE) &&
+               !check(TokenType::IDENTIFIER)) {
+            advance();
+        }
+        if (check(TokenType::COMMA)) {
+            advance();
+            while (!check(TokenType::END_OF_FILE) && !check(TokenType::MNEMONIC) &&
+                   !check(TokenType::DIRECTIVE) && !check(TokenType::IDENTIFIER)) {
+                advance();
+            }
+        }
     }
 }
 

@@ -20,6 +20,7 @@ set(SOURCES
     src/symbol_table.cpp
     src/error_reporter.cpp
     src/device_specs.cpp
+    src/expression.cpp
     src/cli.cpp
     main.cpp
 )
@@ -33,6 +34,7 @@ set(HEADERS
     src/hex_generator.h
     src/symbol_table.h
     src/device_specs.h
+    src/expression.h
     src/cli.h
 )
 
