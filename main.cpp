@@ -39,7 +39,9 @@ int main(int argc, const char* argv[]) {
         // Read source file
         if (options.verbose) {
             std::cout << "Reading: " << options.inputFile << "\n";
-            std::cout << "Target: " << (options.architecture == Architecture::PIC16 ? "PIC16" : "PIC18") << "\n";
+            std::string archName = (options.architecture == Architecture::PIC12) ? "PIC12" :
+                                   (options.architecture == Architecture::PIC16) ? "PIC16" : "PIC18";
+            std::cout << "Target: " << archName << "\n";
         }
         std::string source = readFile(options.inputFile);
 

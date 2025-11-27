@@ -76,6 +76,8 @@ private:
     void parseDirective(const Token& directive);
     void handleORG(const std::string& arg);
     void handleEQU(const std::string& label, const std::string& value);
+    void handleBANKSEL(const std::string& label, std::vector<ParsedInstruction>& instructions);
+    void handlePAGESEL(const std::string& label, std::vector<ParsedInstruction>& instructions);
 
     // Validation
     void validateOperands(ParsedInstruction& instr);

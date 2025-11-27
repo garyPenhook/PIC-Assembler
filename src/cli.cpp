@@ -26,7 +26,9 @@ CLIOptions CommandLineInterface::parseArguments(int argc, const char* argv[]) {
         } else if (arg == "-a" || arg == "--arch") {
             if (i + 1 < argc) {
                 std::string archStr = argv[++i];
-                if (archStr == "pic16" || archStr == "PIC16") {
+                if (archStr == "pic12" || archStr == "PIC12") {
+                    options.architecture = Architecture::PIC12;
+                } else if (archStr == "pic16" || archStr == "PIC16") {
                     options.architecture = Architecture::PIC16;
                 } else if (archStr == "pic18" || archStr == "PIC18") {
                     options.architecture = Architecture::PIC18;
@@ -71,6 +73,7 @@ Options:
   -v, --version        Display version information
 
 Supported Architectures:
+  pic12    PIC12 baseline microcontrollers (12-bit instructions)
   pic16    PIC16 and PIC16F microcontrollers (14-bit instructions)
   pic18    PIC18 and PIC18-Q40 microcontrollers (16-bit instructions)
 

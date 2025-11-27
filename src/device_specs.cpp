@@ -2,6 +2,8 @@
 
 DeviceSpec DeviceSpecs::getDeviceSpec(Architecture arch) {
     switch (arch) {
+        case Architecture::PIC12:
+            return PIC16F506_SPEC;
         case Architecture::PIC16:
             return PIC16F1847_SPEC;
         case Architecture::PIC18:

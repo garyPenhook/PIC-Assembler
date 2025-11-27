@@ -6,12 +6,13 @@
 
 // Supported architecture
 enum class Architecture {
+    PIC12,  // PIC12 Baseline (12-bit instruction word)
     PIC16,  // PIC16 and PIC16F (14-bit instruction word)
     PIC18   // PIC18 and PIC18-Q40 (16-bit instruction word)
 };
 
 enum class InstructionType {
-    // ========== PIC16/PIC18 SHARED ==========
+    // ========== ALL ARCHITECTURES SHARED ==========
     // Byte-Oriented Operations
     ADDWF, ANDWF, CLRF, CLRW, COMF, DECF, DECFSZ, INCF, INCFSZ,
     IORWF, MOVF, MOVWF, NOP, RLF, RRF, SUBWF, SWAPF, XORWF,
@@ -19,8 +20,12 @@ enum class InstructionType {
     // Bit-Oriented Operations
     BCF, BSF, BTFSC, BTFSS,
 
-    // Literal and Control Operations (PIC16/PIC16E)
+    // Literal and Control Operations (PIC16/PIC16E/PIC18)
     ADDLW, ANDLW, CALL, CLRWDT, GOTO, IORLW, MOVLW, RETFIE, RETLW, RETURN, SLEEP, SUBLW, XORLW,
+
+    // ========== PIC12 BASELINE ONLY ==========
+    // Special registers (PIC12 baseline only - not in PIC16/PIC18)
+    OPTION, TRIS,
 
     // ========== PIC16 ENHANCED & PIC18 SHARED ==========
     // Carry variants (exist in both PIC16E and PIC18)
@@ -109,11 +114,59 @@ private:
     void initializeMnemonics();
 
     // Architecture-specific encoders
+    uint16_t encodePIC12Instruction(InstructionType type, uint8_t f_reg, uint8_t d_bit,
+                                    uint8_t b_bit, uint16_t k_value) const;
     uint16_t encodePIC16Instruction(InstructionType type, uint8_t f_reg, uint8_t d_bit,
                                     uint8_t b_bit, uint16_t k_value) const;
     uint16_t encodePIC18Instruction(InstructionType type, uint8_t f_reg, uint8_t d_bit,
                                     uint8_t b_bit, uint16_t k_value) const;
 };
+
+// Opcode constants - PIC12 Baseline (12-bit values)
+namespace Opcodes12 {
+    // Byte-Oriented (format: 00ddaaffffffff where dd=dest, aa=opcode, fff=file reg)
+    constexpr uint16_t ADDWF  = 0x0700;
+    constexpr uint16_t ANDWF  = 0x0500;
+    constexpr uint16_t CLRF   = 0x0180;
+    constexpr uint16_t CLRW   = 0x0100;
+    constexpr uint16_t COMF   = 0x0900;
+    constexpr uint16_t DECF   = 0x0300;
+    constexpr uint16_t DECFSZ = 0x0B00;
+    constexpr uint16_t INCF   = 0x0A00;
+    constexpr uint16_t INCFSZ = 0x0F00;
+    constexpr uint16_t IORWF  = 0x0400;
+    constexpr uint16_t MOVF   = 0x0800;
+    constexpr uint16_t MOVWF  = 0x0080;
+    constexpr uint16_t NOP    = 0x0000;
+    constexpr uint16_t RLF    = 0x0D00;
+    constexpr uint16_t RRF    = 0x0C00;
+    constexpr uint16_t SUBWF  = 0x0200;
+    constexpr uint16_t SWAPF  = 0x0E00;
+    constexpr uint16_t XORWF  = 0x0600;
+
+    // Bit-Oriented (format: 01bbbffffffff where bbb=bit, fff=file reg)
+    constexpr uint16_t BCF    = 0x1000;
+    constexpr uint16_t BSF    = 0x1400;
+    constexpr uint16_t BTFSC  = 0x1800;
+    constexpr uint16_t BTFSS  = 0x1C00;
+
+    // Literal and Control (format: xxxkkkkkkkkkk)
+    constexpr uint16_t ADDLW  = 0x3E00;
+    constexpr uint16_t ANDLW  = 0x3900;
+    constexpr uint16_t CALL   = 0x2000;
+    constexpr uint16_t CLRWDT = 0x0064;
+    constexpr uint16_t GOTO   = 0x2800;
+    constexpr uint16_t IORLW  = 0x3800;
+    constexpr uint16_t MOVLW  = 0x3000;
+    constexpr uint16_t RETLW  = 0x3400;
+    constexpr uint16_t SLEEP  = 0x0063;
+    constexpr uint16_t SUBLW  = 0x3C00;
+    constexpr uint16_t XORLW  = 0x3A00;
+
+    // PIC12 Baseline Special (12-bit)
+    constexpr uint16_t OPTION = 0x0062;  // Load OPTION register
+    constexpr uint16_t TRIS   = 0x0060;  // Load TRIS register (f=5,6,7 for ports)
+}
 
 // Opcode constants - PIC16 Classic Mid-Range (14-bit values)
 namespace Opcodes16Classic {

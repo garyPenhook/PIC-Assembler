@@ -25,6 +25,15 @@ public:
     static const char* getDefaultDeviceName(Architecture arch);
 
 private:
+    // PIC16F506 (Baseline): 512 bytes program memory, 96 bytes data SRAM, 0 bytes EEPROM
+    static constexpr DeviceSpec PIC16F506_SPEC{
+        "PIC16F506",
+        512,     // 512 bytes program memory
+        96,      // 96 bytes data SRAM
+        0,       // 0 bytes EEPROM
+        Architecture::PIC12
+    };
+
     // PIC16F1847: 2 KB program memory, 1.5 KB data SRAM, 256 bytes EEPROM
     static constexpr DeviceSpec PIC16F1847_SPEC{
         "PIC16F1847",

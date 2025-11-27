@@ -69,6 +69,10 @@ void InstructionSet::initializeMnemonics() {
     // Literal Operations
     mnemonicMap["MOVLP"] = InstructionType::MOVLP;
 
+    // ========== PIC12 BASELINE ONLY ==========
+    mnemonicMap["OPTION"] = InstructionType::OPTION;
+    mnemonicMap["TRIS"] = InstructionType::TRIS;
+
     // ========== PIC16 ENHANCED & PIC18 SHARED ==========
     mnemonicMap["ADDWFC"] = InstructionType::ADDWFC;
 
@@ -171,11 +175,64 @@ uint8_t InstructionSet::getInstructionWordSize() const {
 uint16_t InstructionSet::encodeInstruction(InstructionType type, uint8_t f_reg,
                                           uint8_t d_bit, uint8_t b_bit,
                                           uint16_t k_value) const {
-    if (targetArch == Architecture::PIC16) {
+    if (targetArch == Architecture::PIC12) {
+        return encodePIC12Instruction(type, f_reg, d_bit, b_bit, k_value);
+    } else if (targetArch == Architecture::PIC16) {
         return encodePIC16Instruction(type, f_reg, d_bit, b_bit, k_value);
     } else {
         return encodePIC18Instruction(type, f_reg, d_bit, b_bit, k_value);
     }
+}
+
+uint16_t InstructionSet::encodePIC12Instruction(InstructionType type, uint8_t f_reg,
+                                                uint8_t d_bit, uint8_t b_bit,
+                                                uint16_t k_value) const {
+    uint16_t opcode = 0;
+
+    // Byte-Oriented Operations
+    if (type == InstructionType::ADDWF) opcode = Opcodes12::ADDWF | (d_bit << 7) | f_reg;
+    else if (type == InstructionType::ANDWF) opcode = Opcodes12::ANDWF | (d_bit << 7) | f_reg;
+    else if (type == InstructionType::CLRF) opcode = Opcodes12::CLRF | f_reg;
+    else if (type == InstructionType::CLRW) opcode = Opcodes12::CLRW;
+    else if (type == InstructionType::COMF) opcode = Opcodes12::COMF | (d_bit << 7) | f_reg;
+    else if (type == InstructionType::DECF) opcode = Opcodes12::DECF | (d_bit << 7) | f_reg;
+    else if (type == InstructionType::DECFSZ) opcode = Opcodes12::DECFSZ | (d_bit << 7) | f_reg;
+    else if (type == InstructionType::INCF) opcode = Opcodes12::INCF | (d_bit << 7) | f_reg;
+    else if (type == InstructionType::INCFSZ) opcode = Opcodes12::INCFSZ | (d_bit << 7) | f_reg;
+    else if (type == InstructionType::IORWF) opcode = Opcodes12::IORWF | (d_bit << 7) | f_reg;
+    else if (type == InstructionType::MOVF) opcode = Opcodes12::MOVF | (d_bit << 7) | f_reg;
+    else if (type == InstructionType::MOVWF) opcode = Opcodes12::MOVWF | f_reg;
+    else if (type == InstructionType::NOP) opcode = Opcodes12::NOP;
+    else if (type == InstructionType::RLF) opcode = Opcodes12::RLF | (d_bit << 7) | f_reg;
+    else if (type == InstructionType::RRF) opcode = Opcodes12::RRF | (d_bit << 7) | f_reg;
+    else if (type == InstructionType::SUBWF) opcode = Opcodes12::SUBWF | (d_bit << 7) | f_reg;
+    else if (type == InstructionType::SWAPF) opcode = Opcodes12::SWAPF | (d_bit << 7) | f_reg;
+    else if (type == InstructionType::XORWF) opcode = Opcodes12::XORWF | (d_bit << 7) | f_reg;
+
+    // Bit-Oriented Operations
+    else if (type == InstructionType::BCF) opcode = Opcodes12::BCF | (b_bit << 7) | f_reg;
+    else if (type == InstructionType::BSF) opcode = Opcodes12::BSF | (b_bit << 7) | f_reg;
+    else if (type == InstructionType::BTFSC) opcode = Opcodes12::BTFSC | (b_bit << 7) | f_reg;
+    else if (type == InstructionType::BTFSS) opcode = Opcodes12::BTFSS | (b_bit << 7) | f_reg;
+
+    // Literal and Control
+    else if (type == InstructionType::ADDLW) opcode = Opcodes12::ADDLW | (k_value & 0xFF);
+    else if (type == InstructionType::ANDLW) opcode = Opcodes12::ANDLW | (k_value & 0xFF);
+    else if (type == InstructionType::CALL) opcode = Opcodes12::CALL | (k_value & 0x3FF);
+    else if (type == InstructionType::CLRWDT) opcode = Opcodes12::CLRWDT;
+    else if (type == InstructionType::GOTO) opcode = Opcodes12::GOTO | (k_value & 0x3FF);
+    else if (type == InstructionType::IORLW) opcode = Opcodes12::IORLW | (k_value & 0xFF);
+    else if (type == InstructionType::MOVLW) opcode = Opcodes12::MOVLW | (k_value & 0xFF);
+    else if (type == InstructionType::RETLW) opcode = Opcodes12::RETLW | (k_value & 0xFF);
+    else if (type == InstructionType::SLEEP) opcode = Opcodes12::SLEEP;
+    else if (type == InstructionType::SUBLW) opcode = Opcodes12::SUBLW | (k_value & 0xFF);
+    else if (type == InstructionType::XORLW) opcode = Opcodes12::XORLW | (k_value & 0xFF);
+
+    // PIC12 Baseline Special
+    else if (type == InstructionType::OPTION) opcode = Opcodes12::OPTION;
+    else if (type == InstructionType::TRIS) opcode = Opcodes12::TRIS | f_reg;
+
+    return opcode;
 }
 
 uint16_t InstructionSet::encodePIC16Instruction(InstructionType type, uint8_t f_reg,
