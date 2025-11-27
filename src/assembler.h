@@ -7,6 +7,7 @@
 #include <memory>
 #include "instruction.h"
 #include "error_reporter.h"
+#include "device_specs.h"
 
 struct AssembledCode {
     uint16_t address;
@@ -40,6 +41,14 @@ public:
 
     // Generate statistics
     void printStatistics() const;
+
+    // Memory usage queries
+    uint32_t getProgramMemoryUsed() const;
+    uint32_t getProgramMemoryTotal() const;
+    uint32_t getDataMemoryUsed() const;
+    uint32_t getDataMemoryTotal() const;
+    double getProgramMemoryPercentage() const;
+    double getDataMemoryPercentage() const;
 
 private:
     std::vector<AssembledCode> generatedCode;

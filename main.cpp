@@ -81,12 +81,10 @@ int main(int argc, const char* argv[]) {
             return 1;
         }
 
-        // Print statistics
-        if (options.verbose) {
-            assembler.printStatistics();
-        }
+        // Print statistics on successful assembly
+        assembler.printStatistics();
+        std::cout << "\n";
 
-        std::cout << "Assembly successful. Output: " << outputFile << "\n";
         return 0;
 
     } catch (const std::exception& e) {
