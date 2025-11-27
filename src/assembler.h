@@ -47,6 +47,7 @@ public:
     uint32_t getProgramMemoryTotal() const;
     uint32_t getDataMemoryUsed() const;
     uint32_t getDataMemoryTotal() const;
+    uint32_t getEEPROMTotal() const;
     double getProgramMemoryPercentage() const;
     double getDataMemoryPercentage() const;
 

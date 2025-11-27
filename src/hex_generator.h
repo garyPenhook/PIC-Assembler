@@ -1,11 +1,15 @@
 #pragma once
 
 #include "assembler.h"
+#include "instruction.h"
 #include <string>
 #include <vector>
 
 class HexGenerator {
 public:
+    // Constructor with architecture
+    explicit HexGenerator(Architecture arch = Architecture::PIC16);
+
     // Generate Intel HEX format from assembled code
     std::string generateHex(const std::vector<AssembledCode>& code);
 
@@ -17,6 +21,7 @@ public:
 
 private:
     std::string lastError;
+    Architecture targetArch;
 
     // Helper functions for HEX generation
     uint8_t calculateChecksum(const std::vector<uint8_t>& data) const;

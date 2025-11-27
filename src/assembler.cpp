@@ -92,6 +92,9 @@ void Assembler::printStatistics() const {
     std::cout << "  Program Memory: " << progMemUsed << " bytes / " << spec.programMemoryBytes
               << " bytes (" << std::fixed << std::setprecision(2) << progMemPercent << "%)\n";
     std::cout << "  Data Memory: 0 bytes / " << spec.dataMemoryBytes << " bytes (0.00%)\n";
+    if (spec.eepromBytes > 0) {
+        std::cout << "  EEPROM: 0 bytes / " << spec.eepromBytes << " bytes (0.00%)\n";
+    }
     std::cout << "  Status: SUCCESS\n";
 }
 
@@ -118,6 +121,10 @@ uint32_t Assembler::getDataMemoryUsed() const {
 
 uint32_t Assembler::getDataMemoryTotal() const {
     return DeviceSpecs::getDeviceSpec(targetArch).dataMemoryBytes;
+}
+
+uint32_t Assembler::getEEPROMTotal() const {
+    return DeviceSpecs::getDeviceSpec(targetArch).eepromBytes;
 }
 
 double Assembler::getProgramMemoryPercentage() const {

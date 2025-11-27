@@ -4,6 +4,10 @@
 #include <iomanip>
 #include <algorithm>
 
+HexGenerator::HexGenerator(Architecture arch)
+    : targetArch(arch) {
+}
+
 std::string HexGenerator::byteToHex(uint8_t value) const {
     std::stringstream ss;
     ss << std::uppercase << std::setfill('0') << std::setw(2) << std::hex << (int)value;
@@ -70,18 +74,25 @@ std::string HexGenerator::generateHex(const std::vector<AssembledCode>& code) {
     }
 
     // Group instructions by address regions
-    uint16_t currentAddress = 0;
+    uint32_t currentAddress = 0;
     std::vector<uint8_t> currentData;
 
     for (const auto& item : code) {
-        if (item.address != currentAddress && !currentData.empty()) {
+        // Convert word address to byte address for PIC16
+        // PIC16: word-addressed (each word = 2 bytes)
+        // PIC18: byte-addressed (each byte = 1 address unit)
+        uint32_t byteAddress = (targetArch == Architecture::PIC16)
+            ? item.address * 2
+            : item.address;
+
+        if (byteAddress != currentAddress && !currentData.empty()) {
             // Write current record
-            std::string record = createRecord(RecordType::DATA, currentAddress, currentData);
+            std::string record = createRecord(RecordType::DATA, currentAddress & 0xFFFF, currentData);
             result << record << "\n";
             currentData.clear();
         }
 
-        currentAddress = item.address;
+        currentAddress = byteAddress;
 
         // For PIC16, each instruction is 14 bits, but stored as 16-bit words
         // Low byte first (little-endian)
@@ -91,12 +102,12 @@ std::string HexGenerator::generateHex(const std::vector<AssembledCode>& code) {
         currentData.push_back(lowByte);
         currentData.push_back(highByte);
 
-        currentAddress++;
+        currentAddress += 2;
     }
 
     // Write remaining data
     if (!currentData.empty()) {
-        std::string record = createRecord(RecordType::DATA, currentAddress - 1, currentData);
+        std::string record = createRecord(RecordType::DATA, (currentAddress - 2) & 0xFFFF, currentData);
         result << record << "\n";
     }
 

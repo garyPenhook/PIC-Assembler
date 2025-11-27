@@ -75,7 +75,7 @@ int main(int argc, const char* argv[]) {
         if (options.verbose) {
             std::cout << "Generating HEX: " << outputFile << "\n";
         }
-        HexGenerator hexGen;
+        HexGenerator hexGen(options.architecture);
         if (!hexGen.writeToFile(outputFile, code)) {
             cli.printError(hexGen.getLastError());
             return 1;
