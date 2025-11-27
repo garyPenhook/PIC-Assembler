@@ -17,11 +17,11 @@ public:
     static const char* getDeviceName(Architecture arch);
 
 private:
-    // PIC16F18076: 4K program memory (2K instructions x 14-bit), 256 bytes RAM
+    // PIC16F18076: 28 KB program memory, 2 KB data SRAM
     static constexpr DeviceSpec PIC16F18076_SPEC{
         "PIC16F18076",
-        4096,    // 4KB program memory
-        256,     // 256 bytes data memory
+        28672,   // 28KB program memory
+        2048,    // 2KB data SRAM
         Architecture::PIC16
     };
 
