@@ -1120,6 +1120,36 @@ For issues, questions, or suggestions:
 - Check existing documentation in ARCHITECTURE.md
 - Review example assembly files
 
+## Documentation
+
+📚 **Complete Documentation Available:**
+
+- **[TUTORIAL.md](TUTORIAL.md)** - Complete beginner's guide to PIC assembly programming
+  - Your first program (LED blink)
+  - Understanding the code line-by-line
+  - Assembling and programming workflow
+  - Common patterns and examples
+  - Troubleshooting guide
+
+- **[PROGRAMMING.md](PROGRAMMING.md)** - Programming PICs with ipecmd
+  - Using Microchip's command-line programmer
+  - Installation and setup
+  - Makefile integration
+  - Complete workflow examples
+  - Advanced features and troubleshooting
+  - **ipecmd is the PIC equivalent of avrdude**
+
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Technical internals
+  - How the assembler works
+  - Two-pass assembly process
+  - Instruction encoding details
+  - Intel HEX format generation
+
+- **[.github/copilot-examples/](.github/copilot-examples/)** - Device-specific register definitions
+  - Register addresses for popular PICs
+  - Complete working examples
+  - GitHub Copilot training files
+
 ## Version History
 
 **v1.2+ (Current - In Development)**
