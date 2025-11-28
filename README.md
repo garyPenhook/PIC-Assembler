@@ -49,6 +49,80 @@ A modern, standards-compliant assembler for Microchip® PIC® microcontrollers w
 - Cross-architecture development support
 - Embedded project integration
 
+## Important: No Device Include Files Required
+
+This assembler **does not** require or use Microchip device include files (`.inc` files) or device family packs (DFP files). This is a deliberate design choice that makes the assembler simple, portable, and self-contained.
+
+### Why Include Files Are Not Needed
+
+Traditional PIC assemblers like MPASM require device-specific `.inc` files that contain:
+- Register name definitions (e.g., `PORTA EQU 0x0C`)
+- Bit position definitions (e.g., `Z EQU 2`)
+- Configuration bit settings
+- Special function register (SFR) mappings
+
+**GnSasm takes a different approach:** It expects you to use **numeric addresses directly** rather than symbolic names. This design choice means:
+
+1. **No external dependencies** - The assembler works immediately without downloading device packs
+2. **Universal compatibility** - Works with any PIC12/PIC16/PIC18 device
+3. **Simpler toolchain** - No need to manage include file libraries or device databases
+4. **Portable code** - Assembly files are self-contained
+
+### How to Write Assembly Without Include Files
+
+Instead of using symbolic names from include files, you reference registers by their absolute addresses from the device datasheet.
+
+**Traditional MPASM approach** (with `.inc` file):
+```asm
+#include <p16f18076.inc>
+    MOVWF PORTA    ; PORTA defined in .inc as 0x0C
+    BSF   STATUS,Z ; STATUS=0x03, Z=2
+```
+
+**GnSasm approach** (no `.inc` needed):
+```asm
+    MOVWF 0x0C     ; Direct address for PORTA
+    BSF   0x03,2   ; STATUS register, bit 2 (Zero flag)
+```
+
+### Finding Register Addresses
+
+Consult your device's datasheet to find register addresses:
+- **PIC16F18076 Datasheet**: Section on "Memory Organization" and "Special Function Registers"
+- **PIC18-Q40 Datasheet**: "Register Definitions" section
+- Datasheets are available free from Microchip's website
+
+### Optional: Define Your Own Constants
+
+You can create your own symbol definitions using the `EQU` directive:
+
+```asm
+; Define your own register names
+PORTA   EQU 0x0C
+STATUS  EQU 0x03
+TRISA   EQU 0x8C
+
+; Then use them
+    MOVWF PORTA
+    BSF   STATUS,2
+```
+
+### Trade-offs
+
+**Advantages:**
+- ✅ No external file dependencies
+- ✅ Works for any PIC device immediately
+- ✅ Simpler, more portable toolchain
+- ✅ Easier to understand what addresses are being used
+
+**Disadvantages:**
+- ❌ Less readable code without symbolic names
+- ❌ Must manually look up addresses in datasheets
+- ❌ No device-specific validation of register names
+- ❌ More prone to address typos
+
+This design prioritizes **simplicity and device-independence** over programmer convenience. It's similar to writing "bare metal" assembly - you need to know your hardware's register map.
+
 ## Supported Operating Systems
 
 | OS | Support | Notes |
