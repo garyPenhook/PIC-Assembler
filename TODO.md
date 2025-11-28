@@ -46,16 +46,16 @@
   ```
 
 ### Preprocessor Directives (#-directives from Microchip Standard)
-- [ ] #include - file inclusion (partial - basic support exists)
-- [ ] #define - text substitution macros (preprocessor-level)
-- [ ] #ifdef / #ifndef / #endif - conditional assembly
-- [ ] #if / #else / #elif - expression-based conditionals
-- [ ] #undef - remove macro definitions
+- [x] #include - file inclusion with circular detection and path resolution
+- [x] #define - text substitution macros (preprocessor-level)
+- [x] #ifdef / #ifndef / #endif - conditional assembly
+- [x] #if / #else / #elif - expression-based conditionals with macro expansion
+- [x] #undef - remove macro definitions
+- [x] Macro operators: # (stringify), ## (concatenation)
+- [x] Variable argument lists: ... and __VA_ARGS__
 - [ ] #line - specify source line numbers
 - [ ] #error - generate error messages
 - [ ] #warning - generate warning messages
-- [ ] Macro operators: # (stringify), ## (concatenation)
-- [ ] Variable argument lists: ... and __VA_ARGS__
 
 ### Code Organization (Assembly-Time Macros)
 - [x] MACRO/ENDM - assembly-time macros with parameters
@@ -181,7 +181,7 @@ Currently supporting approximately **25+ of 50+ MPASM directives** (~50%)
 - Directives: PROCESSOR (recognized but not validated)
 
 **Not Implemented:**
-- Preprocessor: #include (full), #define, #ifdef, #ifndef, #if, #else, #elif, #endif, #undef, #error, #warning, #line
+- Preprocessor: #error, #warning, #line
 - Conditionals (Assembly-Time): IF, IFDEF, IFNDEF, ELSE, ENDIF
 - Sections: UDATA, UDATA_ACS, UDATA_OVR, CODE, IDATA
 - Banking: BANKSEL, PAGESEL, BANKISEL
@@ -201,13 +201,15 @@ Currently supporting approximately **25+ of 50+ MPASM directives** (~50%)
 - ✅ CBLOCK/ENDC blocks
 - ✅ MACRO/ENDM with LOCAL labels
 - ✅ Expression evaluation (full arithmetic/logical operations)
+- ✅ All preprocessor directives (#define, #ifdef/#ifndef/#endif, #if/#elif/#else, #include, #undef, function-like macros, macro operators)
+- ✅ Device pack manager utility for extracting and managing Microchip device packs
 
 **High Priority:**
-1. **Preprocessor directives** - #define, #ifdef/#ifndef/#endif, #if/#elif/#else
-2. **#include support (full)** - Enable multi-file projects with proper path resolution
-3. **Conditional assembly** - IF/IFDEF/IFNDEF/ELSE/ENDIF directives
-4. **BANKSEL/PAGESEL** - Automatic banking (high value for users)
-5. **UDATA/CODE sections** - Proper section and memory management
+1. **Conditional assembly** - IF/IFDEF/IFNDEF/ELSE/ENDIF directives (assembly-time, different from preprocessor)
+2. **BANKSEL/PAGESEL** - Automatic banking (high value for users)
+3. **UDATA/CODE sections** - Proper section and memory management
+4. **#error/#warning directives** - Preprocessor error/warning messages
+5. **Device validation** - Check that used instructions/registers exist for selected device
 
 **Medium Priority:**
 6. **Listing directives** - TITLE, LIST/NOLIST, PAGE, MESSG
@@ -226,7 +228,9 @@ Currently supporting approximately **25+ of 50+ MPASM directives** (~50%)
 - ✅ **CBLOCK/ENDC** - Sequential constant block allocation with optional size specifiers
 - ✅ **DT (Define Table)** - RETLW-based lookup tables supporting strings and numeric values
 - ✅ **MACRO/ENDM** - Full macro support with parameters, LOCAL labels, and EXITM
-- ✅ **Test Coverage** - Created test files for all three major features
+- ✅ **Preprocessor Phase 1-5** - Complete text-level preprocessing (#define, #ifdef/#ifndef/#endif, #if/#elif/#else, #include with circular detection, function-like macros with # and ## operators)
+- ✅ **Device Pack Manager** - Python utility to scan, extract, and catalog Microchip device packs (1,748 .inc files extracted from 9 device packs covering 2,903 devices)
+- ✅ **Test Coverage** - Created comprehensive test files for all features
 - ✅ **Documentation** - Updated TODO.md with detailed feature status
 
 ### Implementation Details:
@@ -235,11 +239,14 @@ Currently supporting approximately **25+ of 50+ MPASM directives** (~50%)
 - LOCAL labels auto-generated with ??L format and auto-incrementing counter
 - Two-pass assembly correctly handles all macro expansion scenarios
 - Expression evaluation supports all standard operators
+- Preprocessor runs as text-level transformation before lexer with macro expansion in conditionals
+- File inclusion with circular reference detection using absolute path tracking
+- Macro operators (stringify # and concatenation ##) fully functional
 
 ### Feature Gap Analysis:
 The main gaps preventing 100% MPASM compatibility are:
-1. **Preprocessor (#-directives)** - Different from assembly-time macros
-2. **Conditional assembly** - Both preprocessor and assembly-time variants
-3. **Section management** - UDATA, CODE, IDATA sections
-4. **Banking/Paging helpers** - BANKSEL, PAGESEL directives
-5. **Multi-file support** - Full #include and linker integration
+1. **Assembly-time conditional assembly** - IF/IFDEF/IFNDEF/ELSE/ENDIF directives (different from preprocessor)
+2. **Section management** - UDATA, CODE, IDATA sections for proper memory layout
+3. **Banking/Paging helpers** - BANKSEL, PAGESEL directives for automatic register management
+4. **Multi-file linking** - GLOBAL/EXTERN for symbol export/import across object files
+5. **Device validation** - Verify selected device supports all used instructions/registers
