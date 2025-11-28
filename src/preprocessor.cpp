@@ -111,7 +111,61 @@ std::string Preprocessor::processLines(const std::vector<std::string>& lines,
         size_t lineNum = i + 1;
         const std::string& line = lines[i];
 
-        // Process the line
+        // Check if this is an #include directive
+        std::string trimmedLine = trim(line);
+        if (!trimmedLine.empty() && trimmedLine[0] == '#') {
+            auto [directive, args] = parseDirectiveLine(trimmedLine);
+            if (directive == "INCLUDE") {
+                // Handle include by recursively processing the file
+                std::string includeFile = trim(args);
+                bool isSystemInclude = false;
+
+                if (includeFile.length() >= 2) {
+                    if (includeFile[0] == '<' && includeFile[includeFile.length() - 1] == '>') {
+                        isSystemInclude = true;
+                        includeFile = includeFile.substr(1, includeFile.length() - 2);
+                    } else if (includeFile[0] == '"' && includeFile[includeFile.length() - 1] == '"') {
+                        isSystemInclude = false;
+                        includeFile = includeFile.substr(1, includeFile.length() - 2);
+                    }
+                }
+
+                if (!includeFile.empty()) {
+                    std::string resolvedPath = resolveIncludePath(includeFile, currentDir, isSystemInclude);
+                    if (!resolvedPath.empty()) {
+                        std::string absolutePath = fs::absolute(resolvedPath).string();
+                        if (includedFiles.find(absolutePath) == includedFiles.end()) {
+                            includedFiles.insert(absolutePath);
+
+                            // Read the included file
+                            std::ifstream file(resolvedPath);
+                            if (file.is_open()) {
+                                std::vector<std::string> includedLines;
+                                std::string includeLine;
+                                while (std::getline(file, includeLine)) {
+                                    includedLines.push_back(includeLine);
+                                }
+                                file.close();
+
+                                // Recursively process the included file
+                                includeDepth++;
+                                std::string includedContent = processLines(includedLines, resolvedPath,
+                                                                          getDirectory(resolvedPath));
+                                includeDepth--;
+
+                                output << includedContent;
+                                // Don't add to processed line count - already handled by recursive call
+                                continue;
+                            }
+                        }
+                    }
+                }
+                // If include failed, just skip the line
+                continue;
+            }
+        }
+
+        // Process the line normally
         std::string processedLine = processLine(line, lineNum, filename);
 
         // If the line should be included in output
@@ -230,62 +284,83 @@ void Preprocessor::handleDefine(const std::string& args, size_t lineNum, const s
         return;
     }
 
-    // Parse: #define NAME [value] or #define NAME(params) replacement
-    std::istringstream iss(args);
-    std::string name;
-    iss >> name;
+    std::string trimmedArgs = trim(args);
 
-    if (name.empty()) {
+    // Find the macro name - everything before the first space or (
+    size_t nameEnd = 0;
+    while (nameEnd < trimmedArgs.length() &&
+           trimmedArgs[nameEnd] != ' ' &&
+           trimmedArgs[nameEnd] != '\t' &&
+           trimmedArgs[nameEnd] != '(') {
+        nameEnd++;
+    }
+
+    if (nameEnd == 0) {
         errorReporter.reportError(lineNum, 1, "#define requires a name");
         return;
     }
 
-    // Check if function-like macro: NAME(params)
-    size_t parenPos = name.find('(');
+    std::string macroName = trimmedArgs.substr(0, nameEnd);
     PreprocessorDefine define;
-    define.name = name;
+    define.name = macroName;
     define.definitionLine = lineNum;
     define.definitionFile = filename;
     define.isFunctionLike = false;
     define.isVariadic = false;
 
-    if (parenPos != std::string::npos) {
+    // Check if function-like macro: NAME(params)
+    if (nameEnd < trimmedArgs.length() && trimmedArgs[nameEnd] == '(') {
         // Function-like macro: #define NAME(params) replacement
-        define.name = name.substr(0, parenPos);
         define.isFunctionLike = true;
 
-        // Extract parameter list
-        size_t closeParenPos = name.find(')', parenPos);
+        // Find closing paren
+        size_t closeParenPos = trimmedArgs.find(')', nameEnd + 1);
         if (closeParenPos == std::string::npos) {
             errorReporter.reportError(lineNum, 1, "Missing closing parenthesis in macro definition");
             return;
         }
 
-        std::string paramStr = name.substr(parenPos + 1, closeParenPos - parenPos - 1);
+        // Extract parameter list (between parentheses)
+        std::string paramStr = trimmedArgs.substr(nameEnd + 1, closeParenPos - nameEnd - 1);
 
-        // Parse parameters
-        std::istringstream paramIss(paramStr);
-        std::string param;
-        while (std::getline(paramIss, param, ',')) {
-            param = trim(param);
-            if (!param.empty()) {
+        // Parse parameters (comma-separated)
+        size_t pos = 0;
+        while (pos < paramStr.length()) {
+            // Skip whitespace
+            while (pos < paramStr.length() && isWhitespace(paramStr[pos])) {
+                pos++;
+            }
+
+            // Extract parameter name
+            size_t paramStart = pos;
+            while (pos < paramStr.length() && (std::isalnum(paramStr[pos]) || paramStr[pos] == '_' || paramStr[pos] == '.')) {
+                pos++;
+            }
+
+            if (pos > paramStart) {
+                std::string param = paramStr.substr(paramStart, pos - paramStart);
                 if (param == "...") {
                     define.isVariadic = true;
-                } else {
+                } else if (!param.empty()) {
                     define.parameters.push_back(param);
                 }
             }
+
+            // Skip whitespace and comma
+            while (pos < paramStr.length() && (isWhitespace(paramStr[pos]) || paramStr[pos] == ',')) {
+                pos++;
+            }
         }
 
-        // Get replacement text (skip past the macro definition)
-        size_t replacementStart = args.find(')', parenPos);
-        if (replacementStart != std::string::npos && replacementStart + 1 < args.length()) {
-            define.replacement = trim(args.substr(replacementStart + 1));
+        // Get replacement text (everything after the closing paren)
+        if (closeParenPos + 1 < trimmedArgs.length()) {
+            define.replacement = trim(trimmedArgs.substr(closeParenPos + 1));
         }
     } else {
         // Simple macro: #define NAME value
-        define.replacement = args.substr(name.length());
-        define.replacement = trim(define.replacement);
+        if (nameEnd < trimmedArgs.length()) {
+            define.replacement = trim(trimmedArgs.substr(nameEnd));
+        }
     }
 
     // Store the define
@@ -350,29 +425,18 @@ void Preprocessor::handleIf(const std::string& args, size_t lineNum) {
         return;
     }
 
-    // Create a symbol table for the expression evaluator
-    // Map preprocessor defines to a numeric value (1 if defined, 0 if not)
-    std::map<std::string, uint32_t> symbols;
-    for (const auto& [name, define] : defines) {
-        // Try to parse the replacement text as a number
-        try {
-            ExpressionEvaluator eval;
-            uint32_t value = eval.evaluate(define.replacement);
-            symbols[name] = value;
-        } catch (...) {
-            // If not a number, treat as true (1) if defined
-            symbols[name] = 1;
-        }
-    }
+    // First, expand any macro references in the expression
+    std::string expandedExpr = expandMacros(args, lineNum);
 
     // Evaluate the #if expression
     bool conditionMet = false;
     try {
-        ExpressionEvaluator evaluator(&symbols);
-        uint32_t result = evaluator.evaluate(args);
+        ExpressionEvaluator evaluator;
+        uint32_t result = evaluator.evaluate(expandedExpr);
         conditionMet = (result != 0);
     } catch (const std::exception& e) {
-        errorReporter.reportError(lineNum, 1, "#if expression error: " + std::string(e.what()));
+        errorReporter.reportError(lineNum, 1, "#if expression error: " + std::string(e.what()) +
+                                 " (expanded: " + expandedExpr + ")");
         conditionMet = false;
     }
 
@@ -410,26 +474,18 @@ void Preprocessor::handleElif(const std::string& args, size_t lineNum) {
         return;
     }
 
+    // Expand macros in the expression
+    std::string expandedExpr = expandMacros(args, lineNum);
+
     // Evaluate the elif condition
     bool conditionMet = false;
     try {
-        // Create symbol table for expression evaluation
-        std::map<std::string, uint32_t> symbols;
-        for (const auto& [name, define] : defines) {
-            try {
-                ExpressionEvaluator eval;
-                uint32_t value = eval.evaluate(define.replacement);
-                symbols[name] = value;
-            } catch (...) {
-                symbols[name] = 1;
-            }
-        }
-
-        ExpressionEvaluator evaluator(&symbols);
-        uint32_t result = evaluator.evaluate(args);
+        ExpressionEvaluator evaluator;
+        uint32_t result = evaluator.evaluate(expandedExpr);
         conditionMet = (result != 0);
     } catch (const std::exception& e) {
-        errorReporter.reportError(lineNum, 1, "#elif expression error: " + std::string(e.what()));
+        errorReporter.reportError(lineNum, 1, "#elif expression error: " + std::string(e.what()) +
+                                 " (expanded: " + expandedExpr + ")");
         conditionMet = false;
     }
 
@@ -471,13 +527,85 @@ void Preprocessor::handleEndif(size_t lineNum) {
 
 void Preprocessor::handleInclude(const std::string& args, size_t lineNum,
                                 const std::string& currentFile, const std::string& currentDir) {
-    // Phase 4 - stub for now
+    // Phase 4 - File inclusion
     if (args.empty()) {
         errorReporter.reportError(lineNum, 1, "#include requires a filename");
         return;
     }
 
-    errorReporter.reportWarning(lineNum, 1, "#include not yet implemented");
+    // Determine if this is a system include <...> or local include "..."
+    bool isSystemInclude = false;
+    std::string includeFile = trim(args);
+
+    if (includeFile.length() >= 2) {
+        if (includeFile[0] == '<' && includeFile[includeFile.length() - 1] == '>') {
+            // System include: #include <filename>
+            isSystemInclude = true;
+            includeFile = includeFile.substr(1, includeFile.length() - 2);
+        } else if (includeFile[0] == '"' && includeFile[includeFile.length() - 1] == '"') {
+            // Local include: #include "filename"
+            isSystemInclude = false;
+            includeFile = includeFile.substr(1, includeFile.length() - 2);
+        }
+    }
+
+    if (includeFile.empty()) {
+        errorReporter.reportError(lineNum, 1, "#include filename cannot be empty");
+        return;
+    }
+
+    // Resolve the include file path
+    std::string resolvedPath = resolveIncludePath(includeFile, currentDir, isSystemInclude);
+
+    if (resolvedPath.empty()) {
+        errorReporter.reportError(lineNum, 1, "#include file not found: " + includeFile);
+        return;
+    }
+
+    // Check include depth to prevent infinite recursion
+    if (includeDepth >= MAX_INCLUDE_DEPTH) {
+        errorReporter.reportError(lineNum, 1, "#include depth exceeded (possible circular include)");
+        return;
+    }
+
+    // Check for circular includes
+    std::string absolutePath = fs::absolute(resolvedPath).string();
+    if (includedFiles.count(absolutePath) > 0) {
+        // File already included - skip silently to prevent circular includes
+        return;
+    }
+    includedFiles.insert(absolutePath);
+
+    // Read and process the included file
+    std::ifstream file(resolvedPath);
+    if (!file.is_open()) {
+        errorReporter.reportError(lineNum, 1, "#include cannot open file: " + resolvedPath);
+        return;
+    }
+
+    // Read all lines from the included file
+    std::vector<std::string> lines;
+    std::string line;
+    while (std::getline(file, line)) {
+        lines.push_back(line);
+    }
+    file.close();
+
+    // Get the directory of the included file for nested includes
+    std::string includeDir = getDirectory(resolvedPath);
+    if (includeDir.empty()) {
+        includeDir = currentDir;
+    }
+
+    // Process the included file's lines and add them to output
+    // Note: This is a simplified implementation that processes included content
+    // A full implementation would need to integrate this with the main processing loop
+    includeDepth++;
+    std::string includedContent = processLines(lines, resolvedPath, includeDir);
+    includeDepth--;
+
+    // This would need to be integrated into the main processing flow
+    // For now, the included content is processed but not directly inserted
 }
 
 void Preprocessor::handleError(const std::string& args, size_t lineNum) {
@@ -636,12 +764,41 @@ std::string Preprocessor::substituteParameters(const std::string& text,
         const std::string& param = parameters[i];
         const std::string& arg = arguments[i];
 
-        // Simple text replacement of parameter names
+        // Handle # operator (stringify) - #param becomes "arg"
+        size_t hashPos = 0;
+        while ((hashPos = result.find("#" + param, hashPos)) != std::string::npos) {
+            std::string replacement = "\"" + arg + "\"";
+            result.replace(hashPos, 1 + param.length(), replacement);
+            hashPos += replacement.length();
+        }
+
+        // Handle ## operator (concatenation) - param##something becomes argsomething
+        size_t concatPos = 0;
+        while ((concatPos = result.find(param + "##", concatPos)) != std::string::npos) {
+            result.replace(concatPos, param.length(), arg);
+            concatPos += arg.length();
+            // Skip the ## operator
+            if (concatPos < result.length() && result[concatPos] == '#' &&
+                concatPos + 1 < result.length() && result[concatPos + 1] == '#') {
+                result.erase(concatPos, 2);
+            }
+        }
+
+        // Handle ## operator - something##param becomes somethingarg
+        concatPos = 0;
+        while ((concatPos = result.find("##" + param, concatPos)) != std::string::npos) {
+            result.erase(concatPos, 2);  // Remove ##
+            result.insert(concatPos, arg);
+            concatPos += arg.length();
+        }
+
+        // Simple text replacement of parameter names (last, so ## and # are handled first)
         size_t pos = 0;
         while ((pos = result.find(param, pos)) != std::string::npos) {
             // Check if this is a whole word (not part of a larger identifier)
-            bool validStart = (pos == 0) || !std::isalnum(result[pos - 1]);
-            bool validEnd = (pos + param.length() >= result.length()) || !std::isalnum(result[pos + param.length()]);
+            bool validStart = (pos == 0) || !std::isalnum(result[pos - 1]) && result[pos - 1] != '_';
+            bool validEnd = (pos + param.length() >= result.length()) ||
+                           (!std::isalnum(result[pos + param.length()]) && result[pos + param.length()] != '_');
 
             if (validStart && validEnd) {
                 result.replace(pos, param.length(), arg);
@@ -678,8 +835,40 @@ std::string Preprocessor::getDirectory(const std::string& filepath) const {
 std::string Preprocessor::resolveIncludePath(const std::string& includeFile,
                                             const std::string& currentDir,
                                             bool isSystemInclude) const {
-    // Phase 4 - stub
-    return includeFile;
+    // Phase 4 - Resolve include file path
+    std::vector<std::string> searchPaths;
+
+    if (!isSystemInclude) {
+        // For local includes, first check relative to current file directory
+        if (!currentDir.empty()) {
+            searchPaths.push_back(currentDir);
+        }
+    }
+
+    // Add base directory
+    searchPaths.push_back(baseDirectory);
+
+    // Add current directory as fallback
+    searchPaths.push_back(".");
+
+    // Try each search path
+    for (const auto& path : searchPaths) {
+        std::string fullPath;
+        if (path.empty() || path == ".") {
+            fullPath = includeFile;
+        } else {
+            fullPath = path + "/" + includeFile;
+        }
+
+        // Normalize path separators
+        std::replace(fullPath.begin(), fullPath.end(), '\\', '/');
+
+        if (fs::exists(fullPath)) {
+            return fullPath;
+        }
+    }
+
+    return "";  // File not found
 }
 
 std::vector<std::string> Preprocessor::splitLine(const std::string& line, char delimiter) const {
