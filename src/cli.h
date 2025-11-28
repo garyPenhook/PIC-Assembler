@@ -12,6 +12,7 @@ struct CLIOptions {
     bool generateListing = false;
     bool showHelp = false;
     bool showVersion = false;
+    bool showDevices = false;
 };
 
 class CommandLineInterface {
@@ -24,6 +25,9 @@ public:
 
     // Display version
     static void printVersion();
+
+    // Display supported devices
+    static void printDevices();
 
     // Display error message
     static void printError(const std::string& message);

@@ -57,6 +57,11 @@ int main(int argc, const char* argv[]) {
             return 0;
         }
 
+        if (options.showDevices) {
+            cli.printDevices();
+            return 0;
+        }
+
         if (options.inputFile.empty()) {
             cli.printError("No input file specified");
             cli.printHelp();
