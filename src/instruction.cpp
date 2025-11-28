@@ -388,6 +388,9 @@ uint16_t InstructionSet::encodePIC18Instruction(InstructionType type, uint8_t f_
         case InstructionType::INCF:
             opcode = Opcodes18::INCF | (d_bit << 8) | f_reg;
             break;
+        case InstructionType::IORWF:
+            opcode = Opcodes18::IORWF | (d_bit << 8) | f_reg;
+            break;
         case InstructionType::MOVF:
             opcode = Opcodes18::MOVF | (d_bit << 8) | f_reg;
             break;

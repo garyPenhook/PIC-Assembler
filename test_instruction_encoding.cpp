@@ -708,7 +708,7 @@ void testPIC18ByteOrientedExtended() {
 
     std::vector<TestCase> tests = {
         {"ANDWF f, d", "ORG 0x0000\nANDWF 0x20, 1\nEND", 0x0520, "AND W with f"},
-        {"IORWF f, d", "ORG 0x0000\nIORWF 0x20, 1\nEND", 0x1020, "OR W with f"},
+        {"IORWF f, d", "ORG 0x0000\nIORWF 0x20, 1\nEND", 0x1120, "OR W with f"},
         {"XORWF f, d", "ORG 0x0000\nXORWF 0x20, 1\nEND", 0x0720, "XOR W with f"},
         {"COMF f, d", "ORG 0x0000\nCOMF 0x20, 1\nEND", 0x1D20, "Complement f"},
         {"NEGF f", "ORG 0x0000\nNEGF 0x20\nEND", 0x6C00, "Negate f"},
