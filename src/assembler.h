@@ -11,11 +11,16 @@
 #include "exceptions.h"
 #include "preprocessor.h"
 
+// Forward declaration for SectionType (defined in parser.h)
+enum class SectionType;
+
 struct AssembledCode {
     uint16_t address;
     uint16_t instruction;
     std::string sourceCode;
     int lineNumber;
+    std::string sectionName;     // Which section this belongs to
+    SectionType sectionType;     // Type of section (cast from SectionType enum)
 };
 
 struct DataDefinition {
@@ -23,6 +28,9 @@ struct DataDefinition {
     std::vector<uint8_t> bytes;
     std::string sourceCode;
     int lineNumber;
+    std::string sectionName;     // Which section this belongs to
+    SectionType sectionType;     // Type of section
+    bool isInitialized;          // IDATA vs UDATA
 };
 
 struct ConfigWord {
@@ -63,6 +71,9 @@ public:
 
     // Generate statistics
     void printStatistics() const;
+
+    // Generate list file (.lst) with source code and generated code
+    bool generateListFile(const std::string& filename, const std::string& sourceCode) const;
 
     // Memory usage queries
     uint32_t getProgramMemoryUsed() const;

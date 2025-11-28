@@ -2,6 +2,21 @@
 
 ## ✅ Recently Completed Features
 
+### Device Register Names & Listing Files (Latest Session)
+- [x] Symbolic device register names from .inc files
+  - Load register definitions from Microchip device include files
+  - Case-insensitive register name resolution (PORTA = porta = PortA)
+  - Redefinition protection: device registers cannot be overridden
+  - Device registers have highest priority in symbol lookup
+  - Support for 1,748 device include files covering 2,903 devices
+- [x] Listing file generation (`.lst` files)
+  - Command-line option: `-l` / `--listing`
+  - Assembly listing with source code and generated machine code
+  - Symbol table with addresses
+  - Memory usage statistics (program, data, EEPROM)
+  - Assembly statistics (instruction count, address range)
+  - Cross-reference between source and generated code
+
 ### Configuration Support
 - [x] CONFIG directive parsing (numeric and symbolic values)
 - [x] CONFIG word storage and management
@@ -216,7 +231,6 @@ Currently supporting approximately **25+ of 50+ MPASM directives** (~50%)
 2. **#error/#warning directives** - Preprocessor error/warning messages
 3. **Device validation** - Check that used instructions/registers exist for selected device
 4. **Multi-file project support** - GLOBAL/EXTERN directives for symbol export/import
-5. **Symbolic register names** - Support register names from device include files
 
 **Medium Priority:**
 6. **Listing directives** - TITLE, LIST/NOLIST, PAGE, MESSG
@@ -231,6 +245,33 @@ Currently supporting approximately **25+ of 50+ MPASM directives** (~50%)
 ## 📝 Completion Summary
 
 ### Latest Session Accomplishments:
+
+**This Session:**
+- ✅ **Symbolic Device Register Names** - Load and use register names from .inc files
+  - Implemented 6-phase feature: symbol table enhancement, preprocessor search paths, .inc parser, redefinition checks, case-insensitive lookup, test suite
+  - Added device register category to symbol table with case-insensitive matching
+  - Parser method: `loadDeviceRegistersFromFile()` for parsing .inc files with regex
+  - Assembler pre-loading: scans source for #include directives before parsing
+  - Preprocessor filtering: skips .inc files from output, directs assembler to handle them
+  - Error protection: prevents redefinition of device registers via EQU/SET
+  - Comprehensive test coverage: basic usage, case-insensitivity, redefinition errors, mixed symbols
+- ✅ **Listing File Generation** - Generate detailed `.lst` files for assembly
+  - Command-line option: `-l` or `--listing`
+  - Assembly listing section: source code cross-referenced with machine code and addresses
+  - Symbol table: labels with their memory addresses
+  - Memory usage: program/data/EEPROM statistics with percentages
+  - Assembly statistics: instruction count, address ranges, data items
+  - Automatic filename: input.asm → input.lst
+  - Integrated with existing build pipeline
+- ✅ **Test Files** - Created comprehensive test suite for device registers
+  - test_device_registers_basic.asm - Basic register loading
+  - test_device_registers_case_insensitive.asm - Case variations
+  - test_device_registers_redefinition_error.asm - Error handling
+  - test_device_registers_mixed_symbols.asm - Integration with user symbols
+  - test_device_registers_comprehensive.asm - All features combined
+  - test_listing_demo.asm - Listing file demonstration
+
+**Previous Sessions:**
 - ✅ **CBLOCK/ENDC** - Sequential constant block allocation with optional size specifiers
 - ✅ **DT (Define Table)** - RETLW-based lookup tables supporting strings and numeric values
 - ✅ **MACRO/ENDM** - Full macro support with parameters, LOCAL labels, and EXITM
@@ -259,7 +300,12 @@ Currently supporting approximately **25+ of 50+ MPASM directives** (~50%)
 ### Feature Gap Analysis:
 The main gaps preventing 100% MPASM compatibility are:
 1. **Section management** - UDATA, CODE, IDATA sections for proper memory layout
-2. **Banking/Paging helpers** - BANKSEL, PAGESEL directives for automatic register management
-3. **Multi-file linking** - GLOBAL/EXTERN for symbol export/import across object files
-4. **Device validation** - Verify selected device supports all used instructions/registers
-5. **Preprocessor error/warning** - #error and #warning directives
+2. **Multi-file linking** - GLOBAL/EXTERN for symbol export/import across object files
+3. **Device validation** - Verify selected device supports all used instructions/registers
+4. **Preprocessor error/warning** - #error and #warning directives
+5. **Advanced listing directives** - TITLE, LIST/NOLIST, PAGE, MESSG for listing control
+
+### Completed Features (Last 2 Sessions):
+- ✅ **Symbolic register names** - Support for device register names from .inc files
+- ✅ **Listing file generation** - Detailed assembly listings with cross-references
+- ✅ **Banking/Paging helpers** - BANKSEL, PAGESEL, BANKISEL directives implemented

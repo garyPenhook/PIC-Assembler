@@ -4,10 +4,15 @@
 #include <sstream>
 #include <algorithm>
 #include <cctype>
+#include <fstream>
+#include <regex>
 
 Parser::Parser(const std::vector<Token>& tokens, Architecture arch)
     : tokens(tokens), currentPos(0), programCounter(0), currentArch(arch), defaultRadix(10),
-      insideCBLOCK(false), cblockAddress(0), insideMacroDefinition(false),
+      insideCBLOCK(false), cblockAddress(0),
+      currentSectionType(SectionType::CODE), currentSectionName("_default_code"),
+      codeProgramCounter(0), dataProgramCounter(0),
+      insideMacroDefinition(false),
       macroExpansionDepth(0), localLabelCounter(0), conditionalDepth(0) {}
 
 Token& Parser::current() {
@@ -424,6 +429,14 @@ void Parser::handleORG(const std::string& arg) {
 void Parser::handleEQU(const std::string& label, const std::string& value) {
     uint16_t val;
 
+    // Check if attempting to redefine a device register
+    if (symbolTable.isDeviceRegister(label)) {
+        errorReporter.reportError(current().line, current().column,
+            "Cannot redefine device register: '" + label + "'",
+            "Device register is read-only. Load it from device include file.", "");
+        return;
+    }
+
     // Check if value is a symbol reference
     if (symbolTable.hasSymbol(value)) {
         // Reference to another symbol
@@ -446,6 +459,14 @@ void Parser::handleEQU(const std::string& label, const std::string& value) {
 
 void Parser::handleSET(const std::string& label, const std::string& value) {
     uint16_t val;
+
+    // Check if attempting to redefine a device register
+    if (symbolTable.isDeviceRegister(label)) {
+        errorReporter.reportError(current().line, current().column,
+            "Cannot redefine device register: '" + label + "'",
+            "Device register is read-only. Load it from device include file.", "");
+        return;
+    }
 
     // Check if value is a symbol reference
     if (symbolTable.hasSymbol(value)) {
@@ -698,6 +719,62 @@ void Parser::parseDirective(const Token& directive) {
     } else if (dirName == "ENDIF") {
         // ENDIF - end conditional block
         handleENDIF();
+    } else if (dirName == "CODE") {
+        // CODE [name] [address] - switch to CODE section
+        advance();  // Move past CODE
+        std::string nameAndAddress = "";
+        // Collect all tokens on this line as section name/address
+        uint32_t directiveLine = directive.line;
+        while (!check(TokenType::END_OF_FILE) && current().line == directiveLine) {
+            if (!nameAndAddress.empty()) nameAndAddress += " ";
+            nameAndAddress += current().value;
+            advance();
+        }
+        handleCODE(nameAndAddress);
+        if (currentPos > 0) currentPos--;
+    } else if (dirName == "UDATA" || dirName == "UDATA_ACS" || dirName == "UDATA_OVR" || dirName == "UDATA_SHR") {
+        // UDATA [name] [address] - switch to UDATA section
+        advance();  // Move past UDATA
+        std::string nameAndAddress = "";
+        // Collect all tokens on this line as section name/address
+        uint32_t directiveLine = directive.line;
+        while (!check(TokenType::END_OF_FILE) && current().line == directiveLine) {
+            if (!nameAndAddress.empty()) nameAndAddress += " ";
+            nameAndAddress += current().value;
+            advance();
+        }
+        // Determine section type based on directive name
+        SectionType sectionType = SectionType::UDATA;
+        if (dirName == "UDATA_ACS") sectionType = SectionType::UDATA_ACS;
+        else if (dirName == "UDATA_OVR") sectionType = SectionType::UDATA_OVR;
+        else if (dirName == "UDATA_SHR") sectionType = SectionType::UDATA_SHR;
+
+        handleUDATA(nameAndAddress, sectionType);
+        if (currentPos > 0) currentPos--;
+    } else if (dirName == "IDATA" || dirName == "IDATA_ACS") {
+        // IDATA [name] [address] - switch to IDATA section
+        advance();  // Move past IDATA
+        std::string nameAndAddress = "";
+        // Collect all tokens on this line as section name/address
+        uint32_t directiveLine = directive.line;
+        while (!check(TokenType::END_OF_FILE) && current().line == directiveLine) {
+            if (!nameAndAddress.empty()) nameAndAddress += " ";
+            nameAndAddress += current().value;
+            advance();
+        }
+        handleIDATA(nameAndAddress);
+        if (currentPos > 0) currentPos--;
+    } else if (dirName == "RES") {
+        // RES size - reserve space in UDATA section
+        advance();  // Move past RES
+        if (check(TokenType::DECIMAL_NUMBER) || check(TokenType::HEX_NUMBER) ||
+            check(TokenType::OCTAL_NUMBER) || check(TokenType::BINARY_NUMBER)) {
+            handleRES(current().value);
+            advance();  // Skip size value
+        } else {
+            errorReporter.reportError(directive.line, directive.column, "RES requires a size value", "", "");
+        }
+        if (currentPos > 0) currentPos--;
     }
 }
 
@@ -706,6 +783,23 @@ void Parser::firstPass() {
     // This populates the symbol table before code generation
     currentPos = 0;
     programCounter = 0;
+
+    // Initialize section state
+    currentSectionType = SectionType::CODE;
+    currentSectionName = "_default_code";
+    codeProgramCounter = 0;
+    dataProgramCounter = (currentArch == Architecture::PIC16) ? PIC16_DATA_START : PIC18_DATA_START;
+
+    // Create implicit default CODE section
+    SectionDefinition defaultCode;
+    defaultCode.name = "_default_code";
+    defaultCode.type = SectionType::CODE;
+    defaultCode.startAddress = 0;
+    defaultCode.currentAddress = 0;
+    defaultCode.hasExplicitAddress = true;
+    defaultCode.isAbsolute = true;
+    namedSections.clear();
+    namedSections[defaultCode.name] = defaultCode;
 
     while (!check(TokenType::END_OF_FILE)) {
         // Check for conditional directives - ALWAYS process them even in inactive blocks
@@ -815,8 +909,20 @@ void Parser::firstPass() {
 
         // Check for mnemonics - they increment program counter
         if (check(TokenType::MNEMONIC)) {
+            // Mnemonics only valid in CODE sections
+            if (currentSectionType != SectionType::CODE) {
+                errorReporter.reportError(current().line, current().column,
+                    "Instructions only allowed in CODE sections",
+                    "Use CODE directive before adding instructions", "");
+            } else {
+                programCounter++;
+                codeProgramCounter++;
+                // Update current section's address
+                if (!currentSectionName.empty() && namedSections.find(currentSectionName) != namedSections.end()) {
+                    namedSections[currentSectionName].currentAddress = codeProgramCounter;
+                }
+            }
             advance();
-            programCounter++;  // Each instruction uses one word
             continue;
         }
 
@@ -824,9 +930,13 @@ void Parser::firstPass() {
         advance();
     }
 
-    // Reset position for second pass
+    // Reset position and state for second pass
     currentPos = 0;
     programCounter = 0;
+    currentSectionType = SectionType::CODE;
+    currentSectionName = "_default_code";
+    codeProgramCounter = 0;
+    dataProgramCounter = (currentArch == Architecture::PIC16) ? PIC16_DATA_START : PIC18_DATA_START;
 }
 
 std::vector<ParsedInstruction> Parser::parse() {
@@ -843,6 +953,12 @@ std::vector<ParsedInstruction> Parser::parse() {
     conditionalDepth = 0;
     currentPos = 0;
     programCounter = 0;
+
+    // Initialize section state for second pass (same as firstPass)
+    currentSectionType = SectionType::CODE;
+    currentSectionName = "_default_code";
+    codeProgramCounter = 0;
+    dataProgramCounter = (currentArch == Architecture::PIC16) ? PIC16_DATA_START : PIC18_DATA_START;
 
     // Second pass: generate code using complete symbol table
     std::vector<ParsedInstruction> instructions;
@@ -976,11 +1092,27 @@ std::vector<ParsedInstruction> Parser::parse() {
 
         // Check for mnemonics
         if (check(TokenType::MNEMONIC)) {
+            // Mnemonics only valid in CODE sections
+            if (currentSectionType != SectionType::CODE) {
+                errorReporter.reportError(current().line, current().column,
+                    "Instructions only allowed in CODE sections",
+                    "Use CODE directive before adding instructions", "");
+                advance();
+                continue;
+            }
+
             Token& mnemonicToken = current();
             advance();
             try {
                 ParsedInstruction instr = parseInstruction(mnemonicToken);
                 instructions.push_back(instr);
+
+                // Advance PC counters
+                programCounter++;
+                codeProgramCounter++;
+                if (!currentSectionName.empty() && namedSections.find(currentSectionName) != namedSections.end()) {
+                    namedSections[currentSectionName].currentAddress = codeProgramCounter;
+                }
             } catch (const ParseError& e) {
                 // Error already reported
             }
@@ -1776,4 +1908,373 @@ void Parser::handlePAGESEL(const std::string& label, std::vector<ParsedInstructi
     movwf.address = programCounter - 1;  // Use adjusted address since we already incremented
     movwf.valid = true;
     generatedInstructions.push_back(movwf);
+}
+
+// Section directive handlers and helper functions
+
+uint16_t Parser::getDefaultDataAddress(SectionType type) const {
+    switch (type) {
+        case SectionType::UDATA:
+        case SectionType::UDATA_OVR:
+        case SectionType::UDATA_SHR:
+            return (currentArch == Architecture::PIC16)
+                ? PIC16_DATA_START
+                : PIC18_DATA_START;
+        case SectionType::UDATA_ACS:
+            return PIC18_ACS_START;  // PIC18 access bank
+        case SectionType::IDATA:
+        case SectionType::IDATA_ACS:
+            return (currentArch == Architecture::PIC16)
+                ? PIC16_DATA_START
+                : PIC18_DATA_START;
+        default:
+            return 0;
+    }
+}
+
+void Parser::validateDataAddress(uint16_t address, SectionType type) {
+    // For PIC16: Check if address is in valid data memory range
+    if (currentArch == Architecture::PIC16) {
+        // PIC16 typically has banks: 0x20-0x7F, 0xA0-0xFF, etc.
+        // For now, just warn about SFR area (0x00-0x1F)
+        if (address < 0x20) {
+            errorReporter.reportWarning(current().line, current().column,
+                "Data address 0x" + std::to_string(address) + " in special function register area",
+                "Use addresses 0x20 and above for general purpose RAM");
+        }
+    }
+
+    // For PIC18 UDATA_ACS: Must be in access bank
+    if (type == SectionType::UDATA_ACS) {
+        if (currentArch != Architecture::PIC18) {
+            errorReporter.reportError(current().line, current().column,
+                "UDATA_ACS only supported on PIC18 architecture", "", "");
+        }
+        // Access bank is typically 0x000-0x05F and 0xF60-0xFFF
+        // For simplicity, we'll allow 0x000-0x0FF for now
+        if (address > 0x0FF) {
+            errorReporter.reportWarning(current().line, current().column,
+                "UDATA_ACS address 0x" + std::to_string(address) + " may be outside access bank", "");
+        }
+    }
+}
+
+void Parser::validateCodeAddress(uint16_t address) {
+    // Validate against device specs would go here
+    // For now, just prevent obviously invalid addresses
+    if (address > 0xFFFF) {
+        errorReporter.reportError(current().line, current().column,
+            "Code address exceeds 16-bit address space", "", "");
+    }
+}
+
+void Parser::handleCODE(const std::string& nameAndAddress) {
+    // Parse: [name] CODE [address]
+    // Examples:
+    //   CODE           -> unnamed CODE section at implicit address
+    //   CODE 0x100     -> unnamed CODE section at 0x100
+    //   RESET CODE 0   -> named "RESET" section at 0x0000
+    //   RESET CODE     -> switch to existing named section or create at implicit address
+
+    std::string sectionName = "";
+    uint16_t address = codeProgramCounter;
+    bool hasAddress = false;
+
+    // Simple parsing: if there are tokens, treat first as name, second as address
+    // This is a simplified approach - full MPASM parsing would be more complex
+    std::istringstream iss(nameAndAddress);
+    std::string token1, token2;
+    iss >> token1;
+    if (iss >> token2) {
+        sectionName = token1;
+        try {
+            address = parseNumber(token2);
+            hasAddress = true;
+        } catch (...) {
+            // If we can't parse as number, treat both as section name parts
+            sectionName = nameAndAddress;
+        }
+    } else if (!token1.empty()) {
+        // Single token - could be name or address
+        try {
+            address = parseNumber(token1);
+            hasAddress = true;
+            sectionName = "_default_code";
+        } catch (...) {
+            sectionName = token1;
+        }
+    } else {
+        sectionName = "_default_code";
+    }
+
+    validateCodeAddress(address);
+
+    // Check if this is a new section or switching to existing
+    if (!sectionName.empty() && namedSections.find(sectionName) != namedSections.end()) {
+        // Switching to existing section
+        auto& section = namedSections[sectionName];
+        if (section.type != SectionType::CODE) {
+            errorReporter.reportError(current().line, current().column,
+                "Section '" + sectionName + "' was previously defined as a " +
+                (section.type == SectionType::CODE ? "CODE" : "DATA") + " section",
+                "Cannot switch to CODE if previously UDATA", "");
+            return;
+        }
+        currentSectionType = section.type;
+        currentSectionName = sectionName;
+        programCounter = section.currentAddress;
+        codeProgramCounter = programCounter;
+    } else {
+        // Creating new CODE section
+        SectionDefinition section;
+        section.name = sectionName;
+        section.type = SectionType::CODE;
+        section.startAddress = address;
+        section.currentAddress = address;
+        section.hasExplicitAddress = hasAddress;
+        section.isAbsolute = true;
+
+        namedSections[sectionName] = section;
+        currentSectionType = SectionType::CODE;
+        currentSectionName = sectionName;
+        programCounter = address;
+        codeProgramCounter = address;
+    }
+}
+
+void Parser::handleUDATA(const std::string& nameAndAddress, SectionType type) {
+    // Parse: [name] UDATA [address]
+    // Similar structure to handleCODE but for data sections
+
+    std::string sectionName = "";
+    uint16_t address = getDefaultDataAddress(type);
+    bool hasAddress = false;
+
+    std::istringstream iss(nameAndAddress);
+    std::string token1, token2;
+    iss >> token1;
+    if (iss >> token2) {
+        sectionName = token1;
+        try {
+            address = parseNumber(token2);
+            hasAddress = true;
+        } catch (...) {
+            sectionName = nameAndAddress;
+        }
+    } else if (!token1.empty()) {
+        try {
+            address = parseNumber(token1);
+            hasAddress = true;
+            sectionName = "_default_data";
+        } catch (...) {
+            sectionName = token1;
+        }
+    } else {
+        sectionName = "_default_data";
+    }
+
+    validateDataAddress(address, type);
+
+    // Check if this is a new section or switching to existing
+    if (!sectionName.empty() && namedSections.find(sectionName) != namedSections.end()) {
+        // Switching to existing section
+        auto& section = namedSections[sectionName];
+        if (section.type != type) {
+            errorReporter.reportError(current().line, current().column,
+                "Section '" + sectionName + "' was previously defined with different type",
+                "Cannot change section type", "");
+            return;
+        }
+        currentSectionType = section.type;
+        currentSectionName = sectionName;
+        programCounter = section.currentAddress;
+        dataProgramCounter = programCounter;
+    } else {
+        // Creating new UDATA section
+        SectionDefinition section;
+        section.name = sectionName;
+        section.type = type;
+        section.startAddress = address;
+        section.currentAddress = address;
+        section.hasExplicitAddress = hasAddress;
+        section.isAbsolute = true;
+
+        namedSections[sectionName] = section;
+        currentSectionType = type;
+        currentSectionName = sectionName;
+        programCounter = address;
+        dataProgramCounter = address;
+    }
+}
+
+void Parser::handleIDATA(const std::string& nameAndAddress) {
+    // IDATA sections allocate in data memory but store initial values in program memory
+    // For now, treat similar to UDATA but mark as initialized
+
+    std::string sectionName = "";
+    uint16_t address = getDefaultDataAddress(SectionType::IDATA);
+    bool hasAddress = false;
+
+    std::istringstream iss(nameAndAddress);
+    std::string token1, token2;
+    iss >> token1;
+    if (iss >> token2) {
+        sectionName = token1;
+        try {
+            address = parseNumber(token2);
+            hasAddress = true;
+        } catch (...) {
+            sectionName = nameAndAddress;
+        }
+    } else if (!token1.empty()) {
+        try {
+            address = parseNumber(token1);
+            hasAddress = true;
+            sectionName = "_default_idata";
+        } catch (...) {
+            sectionName = token1;
+        }
+    } else {
+        sectionName = "_default_idata";
+    }
+
+    validateDataAddress(address, SectionType::IDATA);
+
+    // Check if this is a new section or switching to existing
+    if (!sectionName.empty() && namedSections.find(sectionName) != namedSections.end()) {
+        // Switching to existing section
+        auto& section = namedSections[sectionName];
+        if (section.type != SectionType::IDATA && section.type != SectionType::IDATA_ACS) {
+            errorReporter.reportError(current().line, current().column,
+                "Section '" + sectionName + "' was previously defined with different type",
+                "Cannot change section type", "");
+            return;
+        }
+        currentSectionType = section.type;
+        currentSectionName = sectionName;
+        programCounter = section.currentAddress;
+        dataProgramCounter = programCounter;
+    } else {
+        // Creating new IDATA section
+        SectionDefinition section;
+        section.name = sectionName;
+        section.type = SectionType::IDATA;
+        section.startAddress = address;
+        section.currentAddress = address;
+        section.hasExplicitAddress = hasAddress;
+        section.isAbsolute = true;
+
+        namedSections[sectionName] = section;
+        currentSectionType = SectionType::IDATA;
+        currentSectionName = sectionName;
+        programCounter = address;
+        dataProgramCounter = address;
+    }
+}
+
+void Parser::handleRES(const std::string& sizeStr) {
+    // RES directive - only valid inside UDATA/IDATA sections
+    if (currentSectionType != SectionType::UDATA &&
+        currentSectionType != SectionType::UDATA_ACS &&
+        currentSectionType != SectionType::UDATA_OVR &&
+        currentSectionType != SectionType::UDATA_SHR &&
+        currentSectionType != SectionType::IDATA &&
+        currentSectionType != SectionType::IDATA_ACS) {
+        errorReporter.reportError(current().line, current().column,
+            "RES directive only valid in UDATA/IDATA sections",
+            "Use RES inside a UDATA or IDATA section", "");
+        return;
+    }
+
+    // Format: label RES size
+    // The label should have been processed already
+    // Just advance the data PC by size bytes
+    uint16_t size = 0;
+    try {
+        size = parseNumber(sizeStr);
+    } catch (...) {
+        errorReporter.reportError(current().line, current().column,
+            "RES requires a numeric size value",
+            "Example: var RES 2", "");
+        return;
+    }
+
+    // Advance data program counter
+    dataProgramCounter += size;
+    programCounter = dataProgramCounter;
+
+    // Update current section's address
+    if (!currentSectionName.empty() && namedSections.find(currentSectionName) != namedSections.end()) {
+        namedSections[currentSectionName].currentAddress = dataProgramCounter;
+    }
+}
+
+void Parser::loadDeviceRegistersFromFile(const std::string& filePath) {
+    // Load device register definitions from .inc files
+    // Opens a file and extracts EQU statements, adding them as device registers
+
+    std::ifstream file(filePath);
+    if (!file.is_open()) {
+        // File not found - warn but don't fail
+        errorReporter.reportWarning(0, 0,
+            "Device include file not found: " + filePath,
+            "Register definitions will not be available");
+        return;
+    }
+
+    std::string line;
+    int lineNum = 0;
+
+    // Regex for EQU statements: NAME equ HEX_VALUE
+    // Matches: PORTA equ 0000h, STATUS equ 0x0003, WREG EQU 0009, etc.
+    std::regex equRegex(
+        R"(^\s*(\w+)\s+equ\s+(?:0x|H')?([0-9A-Fa-f]+)(?:h|')?\s*(?:;.*)?$)",
+        std::regex_constants::icase
+    );
+
+    while (std::getline(file, line)) {
+        lineNum++;
+
+        // Skip empty lines and comments
+        if (line.empty() || line[0] == ';') {
+            continue;
+        }
+
+        // Skip lines with preprocessor directives
+        if (line[0] == '#') {
+            continue;
+        }
+
+        // Skip lines with C-style #define
+        if (line.find("#define") != std::string::npos) {
+            continue;
+        }
+
+        // Skip bitfield metadata (contains _POSN, _MASK, _SIZE, _LENGTH)
+        if (line.find("_POSN") != std::string::npos ||
+            line.find("_MASK") != std::string::npos ||
+            line.find("_SIZE") != std::string::npos ||
+            line.find("_LENGTH") != std::string::npos) {
+            continue;
+        }
+
+        // Try to match EQU statement
+        std::smatch match;
+        if (std::regex_match(line, match, equRegex)) {
+            std::string name = match[1].str();
+            std::string hexValue = match[2].str();
+
+            try {
+                uint16_t address = std::stoul(hexValue, nullptr, 16);
+
+                // Add to symbol table as device register
+                symbolTable.addDeviceRegister(name, address);
+            } catch (const std::exception& e) {
+                // Invalid number format - skip
+                errorReporter.reportWarning(lineNum, 0,
+                    "Invalid hex value in EQU: " + hexValue,
+                    "Skipping register definition");
+            }
+        }
+    }
 }

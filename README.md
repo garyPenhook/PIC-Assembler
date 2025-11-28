@@ -49,79 +49,71 @@ A modern, standards-compliant assembler for Microchip® PIC® microcontrollers w
 - Cross-architecture development support
 - Embedded project integration
 
-## Important: No Device Include Files Required
+## Device Register Names and Include Files
 
-This assembler **does not** require or use Microchip device include files (`.inc` files) or device family packs (DFP files). This is a deliberate design choice that makes the assembler simple, portable, and self-contained.
+GnSasm now supports **symbolic device register names** from Microchip device include files (`.inc` files), providing full compatibility with MPASM-style assembly code.
 
-### Why Include Files Are Not Needed
+### Loading Device Register Names
 
-Traditional PIC assemblers like MPASM require device-specific `.inc` files that contain:
-- Register name definitions (e.g., `PORTA EQU 0x0C`)
-- Bit position definitions (e.g., `Z EQU 2`)
-- Configuration bit settings
-- Special function register (SFR) mappings
+You can now use symbolic register names by including the appropriate device `.inc` file:
 
-**GnSasm takes a different approach:** It expects you to use **numeric addresses directly** rather than symbolic names. This design choice means:
-
-1. **No external dependencies** - The assembler works immediately without downloading device packs
-2. **Universal compatibility** - Works with any PIC12/PIC16/PIC18 device
-3. **Simpler toolchain** - No need to manage include file libraries or device databases
-4. **Portable code** - Assembly files are self-contained
-
-### How to Write Assembly Without Include Files
-
-Instead of using symbolic names from include files, you reference registers by their absolute addresses from the device datasheet.
-
-**Traditional MPASM approach** (with `.inc` file):
 ```asm
-#include <p16f18076.inc>
-    MOVWF PORTA    ; PORTA defined in .inc as 0x0C
-    BSF   STATUS,Z ; STATUS=0x03, Z=2
+#include <pic16f18076.inc>
+
+        ORG 0x0000
+
+        ; Use symbolic names from the include file
+        MOVLW 0xFF
+        MOVWF PORTA         ; PORTA = 0x0C (loaded from .inc)
+        BSF   STATUS, Z     ; STATUS = 0x03 (loaded from .inc)
 ```
 
-**GnSasm approach** (no `.inc` needed):
-```asm
-    MOVWF 0x0C     ; Direct address for PORTA
-    BSF   0x03,2   ; STATUS register, bit 2 (Zero flag)
-```
+### How It Works
 
-### Finding Register Addresses
+1. **Load register definitions:** Use `#include <device.inc>` to load device register definitions
+2. **Case-insensitive:** Register names work in any case: `PORTA = porta = PortA`
+3. **Protected:** Device registers cannot be redefined with EQU or SET directives
+4. **Priority:** Device registers have highest priority in symbol resolution
 
-Consult your device's datasheet to find register addresses:
-- **PIC16F18076 Datasheet**: Section on "Memory Organization" and "Special Function Registers"
-- **PIC18-Q40 Datasheet**: "Register Definitions" section
-- Datasheets are available free from Microchip's website
+### Supported Devices
+
+The assembler includes **1,748 device include files** covering **2,903 devices** across all Microchip families:
+- **PIC12** baseline series (12-bit instructions)
+- **PIC16/PIC16F** mid-range and enhanced mid-range (14-bit instructions)
+- **PIC18/PIC18-Q40** high-performance (16-bit instructions)
+
+### No Device Packs Required
+
+Unlike MPASM, device include files are **already bundled** with the assembler. No need to:
+- Download device family packs (DFP)
+- Configure include file paths
+- Manage include file libraries
+
+Just use `#include <device.inc>` and you're ready to go!
 
 ### Optional: Define Your Own Constants
 
-You can create your own symbol definitions using the `EQU` directive:
+You can also create your own symbol definitions using the `EQU` directive:
 
 ```asm
-; Define your own register names
-PORTA   EQU 0x0C
-STATUS  EQU 0x03
-TRISA   EQU 0x8C
+; Define your own constants
+MY_DELAY    EQU 10
+BUFFER_SIZE EQU 256
+CONFIG_VAL  SET 0x3F72
 
-; Then use them
-    MOVWF PORTA
-    BSF   STATUS,2
+; Use them in code
+    MOVLW MY_DELAY
+    MOVWF buffer, F
 ```
 
-### Trade-offs
+### Finding Include File Names
 
-**Advantages:**
-- ✅ No external file dependencies
-- ✅ Works for any PIC device immediately
-- ✅ Simpler, more portable toolchain
-- ✅ Easier to understand what addresses are being used
+Device include files use the device model number:
+- `pic16f18076.inc` for PIC16F18076
+- `pic18f14k50.inc` for PIC18F14K50
+- etc.
 
-**Disadvantages:**
-- ❌ Less readable code without symbolic names
-- ❌ Must manually look up addresses in datasheets
-- ❌ No device-specific validation of register names
-- ❌ More prone to address typos
-
-This design prioritizes **simplicity and device-independence** over programmer convenience. It's similar to writing "bare metal" assembly - you need to know your hardware's register map.
+Check the `device_includes/` directory or consult your device's datasheet for the exact filename.
 
 ## Supported Operating Systems
 
@@ -276,7 +268,7 @@ gnsasm [options] input.asm
 Options:
   -a, --arch ARCH      Target architecture: pic16 or pic18 (default: pic16)
   -o, --output FILE    Output file (default: input.hex)
-  -l, --listing        Generate listing file (planned)
+  -l, --listing        Generate listing file (.lst)
   --verbose            Show detailed assembly information
   -h, --help          Display help message
   -v, --version       Display version information
@@ -285,7 +277,8 @@ Examples:
   gnsasm program.asm
   gnsasm program.asm -a pic18
   gnsasm program.asm -o firmware.hex
-  gnsasm program.asm -a pic18 -o firmware.hex --verbose
+  gnsasm program.asm --listing
+  gnsasm program.asm -a pic18 -o firmware.hex --listing --verbose
 ```
 
 ## Development Workflows and Options
@@ -1078,6 +1071,57 @@ The assembler generates Intel HEX format files (.hex) compatible with standard P
 
 ## Advanced Usage
 
+### Listing File Generation
+
+Generate detailed assembly listings with source-to-code cross-reference:
+
+```bash
+# Generate listing file (input.asm → input.lst)
+gnsasm program.asm --listing
+
+# With all options
+gnsasm program.asm -a pic18 --listing --verbose
+```
+
+**Listing file contents:**
+- Assembly listing with source code and generated machine code (hex)
+- Addresses of each instruction
+- Symbol table with label addresses
+- Memory usage statistics (program, data, EEPROM)
+- Assembly statistics (instruction count, address ranges)
+- Assembly status (SUCCESS/FAILED)
+
+**Example listing file output:**
+```
+================================================================================
+GNSASM PIC Assembler Listing File
+================================================================================
+
+Device: PIC16F1847
+Architecture: PIC16 (14-bit instructions)
+
+================================================================================
+ASSEMBLY LISTING
+================================================================================
+  Addr  |  Hex Code  | Source Code
+--------+----------+------------------------------------------------------------
+  0x0000  | 0x30ff   |     MOVLW 0xFF
+  0x0002  | 0x00a0   |     MOVWF 0x20
+  0x0004  | 0x1c03   |     INCF 0x20
+
+... [memory usage and statistics] ...
+
+================================================================================
+ASSEMBLY STATISTICS
+================================================================================
+Total Instructions: 3
+Address Range:      0x0000 - 0x0004
+Total Data Items:   0
+Config Words:       0
+
+Assembly Status: SUCCESS
+```
+
 ### Verbose Output
 ```bash
 gnsasm program.asm --verbose
@@ -1237,19 +1281,28 @@ cmake --build .
 gdb ./gnsasm
 ```
 
+## Recently Completed Features
+
+Recent releases have added:
+- ✅ **Symbolic device register names** - Load and use register names from device include files
+- ✅ **Listing file generation** - Generate `.lst` files with assembly listing, symbol table, and statistics
+- ✅ **Macro support** - Full macro system with parameters, LOCAL labels, and EXITM
+- ✅ **Conditional assembly** - #ifdef, #ifndef, #endif, #if/#elif/#else directives
+- ✅ **Banking/Paging directives** - BANKSEL, PAGESEL, BANKISEL for automatic register management
+- ✅ **Preprocessor directives** - Complete #define, #include, #undef support with function-like macros
+- ✅ **Assembly-time conditionals** - IF/IFDEF/IFNDEF/ELIF/ELSE/ENDIF with expression evaluation
+
 ## Future Enhancements
 
 Planned features for future releases:
-- [ ] Macro support
-- [ ] Conditional assembly (#ifdef, #endif)
-- [ ] Listing file generation (.lst) with symbol cross-references
 - [ ] Symbol export for debugging (ELF format)
 - [ ] Extended instruction sets (PIC24, dsPIC)
 - [ ] C preprocessor integration
 - [ ] IDE integration plugins (Visual Studio Code, CLion)
 - [ ] Advanced data directives (align, fill, reserve)
-- [ ] Section support (.text, .data, .bss)
+- [ ] Section support (.text, .data, .bss with linking)
 - [ ] Linker script support for memory layout control
+- [ ] Multi-file project support (GLOBAL/EXTERN directives)
 
 ## Legal Disclaimer
 
@@ -1315,6 +1368,16 @@ For issues, questions, or suggestions:
 ## Version History
 
 **v1.2+ (Current - In Development)**
+- ✅ **Symbolic device register names** - Support for Microchip device include files
+  - 1,748 bundled device files covering 2,903 devices
+  - Case-insensitive register name resolution
+  - Redefinition protection for device registers
+  - Priority handling in symbol lookup
+- ✅ **Listing file generation** - Generate `.lst` files with detailed assembly information
+  - Assembly listing with source-to-machine-code cross-reference
+  - Symbol table display
+  - Memory usage statistics
+  - Assembly statistics and summary
 - ✅ Fixed DB/DW data directive output in HEX files
   - Resolved data duplication in two-pass assembly
   - Fixed address calculation for merged HEX records
@@ -1352,7 +1415,8 @@ Developed as a modern replacement for MPASM® with enhanced error messages and m
 **Website:** https://github.com/garyPenhook/PIC-Assembler
 **Command:** `gnsasm`
 **Maintainer:** Gary Penhook
-**Last Updated:** November 2025
+**Last Updated:** November 28, 2025
+**Latest Features:** Symbolic device register names (1,748 device files), Listing file generation
 
 ---
 

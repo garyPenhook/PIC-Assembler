@@ -1,0 +1,9 @@
+/home/w4gns/CLionProjects/PIC-Assembler/build_test/CMakeFiles/gnsasm.dir
+/home/w4gns/CLionProjects/PIC-Assembler/build_test/CMakeFiles/test_instruction_encoding.dir
+/home/w4gns/CLionProjects/PIC-Assembler/build_test/CMakeFiles/test.dir
+/home/w4gns/CLionProjects/PIC-Assembler/build_test/CMakeFiles/edit_cache.dir
+/home/w4gns/CLionProjects/PIC-Assembler/build_test/CMakeFiles/rebuild_cache.dir
+/home/w4gns/CLionProjects/PIC-Assembler/build_test/CMakeFiles/list_install_components.dir
+/home/w4gns/CLionProjects/PIC-Assembler/build_test/CMakeFiles/install.dir
+/home/w4gns/CLionProjects/PIC-Assembler/build_test/CMakeFiles/install/local.dir
+/home/w4gns/CLionProjects/PIC-Assembler/build_test/CMakeFiles/install/strip.dir

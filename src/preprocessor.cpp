@@ -147,6 +147,15 @@ std::string Preprocessor::processLines(const std::vector<std::string>& lines,
                                 }
                                 file.close();
 
+                                // Check if this is a device include file (.inc)
+                                // Device registers are loaded separately by the assembler
+                                if (includeFile.length() >= 4 &&
+                                    includeFile.substr(includeFile.length() - 4) == ".inc") {
+                                    // Skip .inc file inclusion in preprocessor output
+                                    // The assembler will load device registers directly from the file
+                                    continue;
+                                }
+
                                 // Recursively process the included file
                                 includeDepth++;
                                 std::string includedContent = processLines(includedLines, resolvedPath,
@@ -847,6 +856,9 @@ std::string Preprocessor::resolveIncludePath(const std::string& includeFile,
 
     // Add base directory
     searchPaths.push_back(baseDirectory);
+
+    // Add device includes directory for .inc files
+    searchPaths.push_back("device_includes");
 
     // Add current directory as fallback
     searchPaths.push_back(".");

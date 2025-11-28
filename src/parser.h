@@ -11,10 +11,33 @@
 #include <stdexcept>
 #include <memory>
 #include <cstdint>
+#include <map>
 
 // Forward declaration to avoid circular include
 struct DataDefinition;
 struct ConfigWord;
+
+// Section type enumeration
+enum class SectionType {
+    CODE,           // Executable code section
+    UDATA,          // Uninitialized data (RAM)
+    UDATA_ACS,      // Access bank uninitialized data (PIC18 only)
+    UDATA_OVR,      // Overlayed uninitialized data (shared address space)
+    UDATA_SHR,      // Shared uninitialized data (across banks)
+    IDATA,          // Initialized data (stored in ROM, copied to RAM)
+    IDATA_ACS,      // Access bank initialized data (PIC18 only)
+    NONE            // No section defined yet (initial state)
+};
+
+// Section definition structure for named sections
+struct SectionDefinition {
+    std::string name;           // Section name (e.g., "MY_DATA")
+    SectionType type;           // Section type
+    uint16_t startAddress;      // Starting address (if specified)
+    uint16_t currentAddress;    // Current allocation address
+    bool hasExplicitAddress;    // Was address explicitly specified?
+    bool isAbsolute;            // Absolute vs relocatable (always absolute for this impl)
+};
 
 // Assembly-time conditional block structure (different from preprocessor ConditionalBlock)
 struct AssemblyConditionalBlock {
@@ -82,6 +105,9 @@ public:
     const ErrorReporter& getErrorReporter() const { return errorReporter; }
     ErrorReporter& getErrorReporter() { return errorReporter; }
 
+    // Device register loading from .inc files
+    void loadDeviceRegistersFromFile(const std::string& filePath);
+
 private:
     std::vector<Token> tokens;
     size_t currentPos;
@@ -97,6 +123,18 @@ private:
     // CBLOCK state
     bool insideCBLOCK;
     uint16_t cblockAddress;
+
+    // Section state
+    SectionType currentSectionType;
+    std::string currentSectionName;
+    std::map<std::string, SectionDefinition> namedSections;  // Track all named sections
+    uint16_t codeProgramCounter;    // PC for CODE sections
+    uint16_t dataProgramCounter;    // PC for UDATA/IDATA sections
+
+    // Default section addresses (architecture-dependent)
+    static constexpr uint16_t PIC16_DATA_START = 0x20;  // PIC16 general purpose RAM
+    static constexpr uint16_t PIC18_DATA_START = 0x000; // PIC18 data memory start
+    static constexpr uint16_t PIC18_ACS_START = 0x000;  // PIC18 access bank start
 
     // MACRO state
     MacroTable macroTable;
@@ -153,6 +191,17 @@ private:
 
     // Helper for conditional evaluation
     std::map<std::string, uint32_t> buildSymbolMap() const;
+
+    // Section directive handlers
+    void handleCODE(const std::string& nameAndAddress);
+    void handleUDATA(const std::string& nameAndAddress, SectionType type);
+    void handleIDATA(const std::string& nameAndAddress);
+    void handleRES(const std::string& sizeStr);
+
+    // Section helper functions
+    uint16_t getDefaultDataAddress(SectionType type) const;
+    void validateDataAddress(uint16_t address, SectionType type);
+    void validateCodeAddress(uint16_t address);
 
     // Validation
     void validateOperands(ParsedInstruction& instr);

@@ -139,6 +139,25 @@ int main(int argc, const char* argv[]) {
                 return 1;
             }
 
+            // Generate listing file if requested
+            if (options.generateListing) {
+                std::string listingFile = options.inputFile;
+                size_t dotPos = listingFile.find_last_of('.');
+                if (dotPos != std::string::npos) {
+                    listingFile = listingFile.substr(0, dotPos);
+                }
+                listingFile += ".lst";
+
+                if (options.verbose) {
+                    std::cout << "Generating listing: " << listingFile << "\n";
+                }
+
+                if (!assembler.generateListFile(listingFile, source)) {
+                    cli.printError("Failed to generate listing file: " + listingFile);
+                    return 1;
+                }
+            }
+
             // Print statistics on successful assembly
             assembler.printStatistics();
             std::cout << "\n";

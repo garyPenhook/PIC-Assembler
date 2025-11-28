@@ -6,6 +6,10 @@
 #include <iostream>
 #include <memory>
 #include <iomanip>
+#include <regex>
+#include <fstream>
+#include <sstream>
+#include <map>
 
 Assembler::Assembler(Architecture arch)
     : successful(false), targetArch(arch), lastErrors(std::make_shared<ErrorReporter>()) {
@@ -47,6 +51,18 @@ std::vector<AssembledCode> Assembler::assemble(const std::string& source) {
 
             // Parsing
             Parser parser(tokens, targetArch);
+
+            // Pre-load device registers from included .inc files
+            // Scan original source for #include <*.inc> directives
+            std::regex includeRegex(R"(#include\s*<([^>]+\.inc)>)", std::regex_constants::icase);
+            std::smatch match;
+            std::string searchSource = source;
+            while (std::regex_search(searchSource, match, includeRegex)) {
+                std::string incFile = match[1].str();
+                parser.loadDeviceRegistersFromFile("device_includes/" + incFile);
+                searchSource = match.suffix().str();
+            }
+
             std::vector<ParsedInstruction> instructions = parser.parse();
 
             // Capture parser errors
@@ -193,4 +209,163 @@ double Assembler::getDataMemoryPercentage() const {
     uint32_t total = getDataMemoryTotal();
     if (total == 0) return 0.0;
     return (getDataMemoryUsed() * 100.0) / total;
+}
+
+bool Assembler::generateListFile(const std::string& filename, const std::string& sourceCode) const {
+    try {
+        std::ofstream file(filename);
+        if (!file.is_open()) {
+            return false;
+        }
+
+        // Split source code into lines for cross-reference with assembled code
+        std::vector<std::string> sourceLines;
+        std::istringstream iss(sourceCode);
+        std::string line;
+        while (std::getline(iss, line)) {
+            sourceLines.push_back(line);
+        }
+
+        DeviceSpec spec = DeviceSpecs::getDeviceSpec(targetArch);
+
+        // Header
+        file << "================================================================================\n";
+        file << "GNSASM PIC Assembler Listing File\n";
+        file << "================================================================================\n\n";
+        file << "Device: " << spec.name << "\n";
+        file << "Architecture: ";
+        if (targetArch == Architecture::PIC12) {
+            file << "PIC12 (12-bit instructions)\n";
+        } else if (targetArch == Architecture::PIC16) {
+            file << "PIC16 (14-bit instructions)\n";
+        } else {
+            file << "PIC18 (16-bit instructions)\n";
+        }
+        file << "\n";
+
+        // Assembly listing with source code
+        file << "================================================================================\n";
+        file << "ASSEMBLY LISTING\n";
+        file << "================================================================================\n";
+        file << "  Addr  |  Hex Code  | Source Code\n";
+        file << "--------+----------+------------------------------------------------------------\n";
+
+        // Create a map of line numbers to generated instructions for quick lookup
+        std::map<int, const AssembledCode*> lineToCode;
+        for (const auto& code : generatedCode) {
+            lineToCode[code.lineNumber] = &code;
+        }
+
+        // Print all source lines with their corresponding generated code
+        for (size_t i = 0; i < sourceLines.size(); ++i) {
+            int lineNum = static_cast<int>(i + 1);
+
+            // Check if this line has generated code
+            auto it = lineToCode.find(lineNum);
+            if (it != lineToCode.end()) {
+                const AssembledCode& code = *it->second;
+                file << std::hex << std::setfill('0');
+                file << "  0x" << std::setw(4) << code.address << "  | ";
+                file << "0x" << std::setw(4) << code.instruction << "   | ";
+                file << std::dec << std::setfill(' ');
+            } else {
+                file << "        |           | ";
+            }
+
+            // Print source code
+            file << sourceLines[i] << "\n";
+        }
+
+        file << "\n";
+
+        // Symbol Table
+        file << "================================================================================\n";
+        file << "SYMBOL TABLE\n";
+        file << "================================================================================\n";
+
+        // Get symbol table from parser - we need to access it through the generated code
+        // For now, we'll create a simple symbol listing from addresses in the code
+        std::map<std::string, uint16_t> symbolMap;
+
+        for (const auto& code : generatedCode) {
+            if (!code.sourceCode.empty()) {
+                // Try to extract label from source code
+                std::string src = code.sourceCode;
+                size_t colonPos = src.find(':');
+                if (colonPos != std::string::npos) {
+                    std::string label = src.substr(0, colonPos);
+                    // Trim whitespace
+                    label.erase(0, label.find_first_not_of(" \t"));
+                    label.erase(label.find_last_not_of(" \t") + 1);
+                    if (!label.empty()) {
+                        symbolMap[label] = code.address;
+                    }
+                }
+            }
+        }
+
+        if (!symbolMap.empty()) {
+            file << "Name                          | Address  |  Value\n";
+            file << "---------------------------+----------+--------\n";
+            for (const auto& [name, addr] : symbolMap) {
+                file << std::left << std::setw(30) << name << "| 0x"
+                     << std::hex << std::setfill('0') << std::setw(6) << addr << "   | ";
+                file << "0x" << std::setw(4) << addr << "\n";
+                file << std::setfill(' ');
+            }
+        } else {
+            file << "(No symbols defined)\n";
+        }
+
+        file << "\n";
+
+        // Memory Usage Summary
+        file << "================================================================================\n";
+        file << "MEMORY USAGE\n";
+        file << "================================================================================\n";
+        file << "Program Memory: " << getProgramMemoryUsed() << " bytes / "
+             << spec.programMemoryBytes << " bytes ("
+             << std::fixed << std::setprecision(2) << getProgramMemoryPercentage() << "%)\n";
+        file << "Data Memory:    " << getDataMemoryUsed() << " bytes / "
+             << spec.dataMemoryBytes << " bytes ("
+             << std::fixed << std::setprecision(2) << getDataMemoryPercentage() << "%)\n";
+        if (spec.eepromBytes > 0) {
+            file << "EEPROM:         0 bytes / " << spec.eepromBytes << " bytes (0.00%)\n";
+        }
+        file << "\n";
+
+        // Statistics
+        file << "================================================================================\n";
+        file << "ASSEMBLY STATISTICS\n";
+        file << "================================================================================\n";
+        file << "Total Instructions: " << generatedCode.size() << "\n";
+        if (!generatedCode.empty()) {
+            file << "Address Range:      0x" << std::hex << std::setfill('0')
+                 << std::setw(4) << generatedCode.front().address << " - 0x"
+                 << std::setw(4) << generatedCode.back().address << "\n";
+        }
+        file << "Total Data Items:   " << generatedData.size() << "\n";
+        file << "Config Words:       " << configWords.size() << "\n";
+        file << "\n";
+
+        if (!successful) {
+            file << "Assembly Status: FAILED\n";
+            if (!lastError.empty()) {
+                file << "Error: " << lastError << "\n";
+            }
+        } else {
+            file << "Assembly Status: SUCCESS\n";
+        }
+
+        file << "\n================================================================================\n";
+        file << "End of Listing\n";
+        file << "================================================================================\n";
+
+        file.close();
+        return true;
+
+    } catch (const std::exception& e) {
+        std::cerr << "Error generating list file: " << e.what() << "\n";
+        return false;
+    }
 }
