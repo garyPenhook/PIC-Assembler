@@ -75,9 +75,9 @@
 - [x] Conditional expression evaluation with symbol resolution
 
 ### Banking/Paging Support
-- [ ] BANKSEL - automatic bank selection
-- [ ] PAGESEL - automatic page selection
-- [ ] BANKISEL - bank selection for indirect addressing
+- [x] BANKSEL - automatic bank selection (PIC16 via RP1:RP0, PIC18 via BSR)
+- [x] PAGESEL - automatic page selection (PIC18 via PCLATH)
+- [x] BANKISEL - bank selection for indirect addressing (PIC18 via BSR)
 
 ## 📋 Medium Priority - MPASM Compatibility
 
@@ -212,11 +212,11 @@ Currently supporting approximately **25+ of 50+ MPASM directives** (~50%)
 - ✅ Device pack manager utility for extracting and managing Microchip device packs
 
 **High Priority:**
-1. **BANKSEL/PAGESEL** - Automatic banking (high value for users)
-2. **UDATA/CODE sections** - Proper section and memory management
-3. **#error/#warning directives** - Preprocessor error/warning messages
-4. **Device validation** - Check that used instructions/registers exist for selected device
-5. **Multi-file project support** - GLOBAL/EXTERN directives for symbol export/import
+1. **UDATA/CODE sections** - Proper section and memory management
+2. **#error/#warning directives** - Preprocessor error/warning messages
+3. **Device validation** - Check that used instructions/registers exist for selected device
+4. **Multi-file project support** - GLOBAL/EXTERN directives for symbol export/import
+5. **Symbolic register names** - Support register names from device include files
 
 **Medium Priority:**
 6. **Listing directives** - TITLE, LIST/NOLIST, PAGE, MESSG
@@ -238,8 +238,13 @@ Currently supporting approximately **25+ of 50+ MPASM directives** (~50%)
 - ✅ **Assembly-Time Conditionals** - IF/IFDEF/IFNDEF/ELIF/ELSE/ENDIF with expression evaluation and full nesting support
 - ✅ **Device Pack Manager** - Python utility to scan, extract, and catalog Microchip device packs (1,748 .inc files extracted from 9 device packs covering 2,903 devices)
 - ✅ **Symbol Table Enhancement** - Added getAllSymbols() method for expression evaluation support
-- ✅ **Test Coverage** - Created comprehensive test files for all features (5 test files for conditionals)
-- ✅ **Documentation** - Updated TODO.md with detailed feature status
+- ✅ **BANKSEL/PAGESEL/BANKISEL** - Automatic banking and paging directives:
+  - PIC16 BANKSEL: Generates BCF/BSF instructions to set RP1:RP0 bits in STATUS register
+  - PIC18 BANKSEL: Generates MOVLW/MOVWF instructions to set BSR register
+  - PIC18 PAGESEL: Generates MOVLW/MOVWF instructions to set PCLATH register
+  - Forward reference handling for multi-pass assembly
+- ✅ **Test Coverage** - Created comprehensive test files (test_banksel_pic16.asm, test_banksel_pic18.asm, test_pagesel_pic18.asm)
+- ✅ **Documentation** - Updated TODO.md with completed BANKSEL/PAGESEL status
 
 ### Implementation Details:
 - All data definition directives now fully functional (DB, DW, DA, DT)

@@ -1614,15 +1614,18 @@ std::map<std::string, uint32_t> Parser::buildSymbolMap() const {
 
 void Parser::handleBANKSEL(const std::string& symbol, std::vector<ParsedInstruction>& instructions) {
     // BANKSEL - Automatic bank selection for PIC16/PIC18
-    // For PIC16: Sets RP1:RP0 bits in STATUS register
-    // For PIC18: Sets BSR register
+    // For PIC16: Sets RP1:RP0 bits in STATUS register (2 instructions)
+    // For PIC18: Sets BSR register (2 instructions)
 
     if (currentArch == Architecture::PIC18) {
         // PIC18 - Set BSR (Bank Select Register) for indirect addressing
         // BSR[3:0] selects the 256-byte RAM bank
+        // Always advance PC by 2 (MOVLW + MOVWF)
+        programCounter += 2;
+
         if (!symbolTable.hasSymbol(symbol)) {
-            errorReporter.reportError(current().line, current().column,
-                "BANKSEL: Undefined symbol '" + symbol + "'", "", "");
+            // Symbol might not be defined yet in first pass
+            // Don't report error - let second pass handle it
             return;
         }
 
@@ -1635,7 +1638,7 @@ void Parser::handleBANKSEL(const std::string& symbol, std::vector<ParsedInstruct
         movlw.mnemonic = "MOVLW";
         movlw.k_value = bankNum;
         movlw.line_number = current().line;
-        movlw.address = programCounter++;
+        movlw.address = programCounter - 2;  // Use adjusted address
         movlw.valid = true;
         generatedInstructions.push_back(movlw);
 
@@ -1645,7 +1648,7 @@ void Parser::handleBANKSEL(const std::string& symbol, std::vector<ParsedInstruct
         movwf.mnemonic = "MOVWF";
         movwf.f_reg = 0xE8;  // BSR register in PIC18 (within 0-255 range for MOVWF)
         movwf.line_number = current().line;
-        movwf.address = programCounter++;
+        movwf.address = programCounter - 1;  // Use adjusted address
         movwf.valid = true;
         generatedInstructions.push_back(movwf);
 
@@ -1655,10 +1658,12 @@ void Parser::handleBANKSEL(const std::string& symbol, std::vector<ParsedInstruct
         // Bank 1: RP1=0, RP0=1
         // Bank 2: RP1=1, RP0=0
         // Bank 3: RP1=1, RP0=1
+        // Always generates 2 instructions (one for RP0, one for RP1)
+        programCounter += 2;
 
         if (!symbolTable.hasSymbol(symbol)) {
-            errorReporter.reportError(current().line, current().column,
-                "BANKSEL: Undefined symbol '" + symbol + "'", "", "");
+            // Symbol might not be defined yet in first pass
+            // Don't report error - let second pass handle it
             return;
         }
 
@@ -1681,7 +1686,7 @@ void Parser::handleBANKSEL(const std::string& symbol, std::vector<ParsedInstruct
             bcf_rp0.f_reg = STATUS_REG;
             bcf_rp0.b_bit = RP0_BIT;
             bcf_rp0.line_number = current().line;
-            bcf_rp0.address = programCounter++;
+            bcf_rp0.address = programCounter - 2;  // Use adjusted address
             bcf_rp0.valid = true;
             generatedInstructions.push_back(bcf_rp0);
         } else {
@@ -1692,7 +1697,7 @@ void Parser::handleBANKSEL(const std::string& symbol, std::vector<ParsedInstruct
             bsf_rp0.f_reg = STATUS_REG;
             bsf_rp0.b_bit = RP0_BIT;
             bsf_rp0.line_number = current().line;
-            bsf_rp0.address = programCounter++;
+            bsf_rp0.address = programCounter - 2;  // Use adjusted address
             bsf_rp0.valid = true;
             generatedInstructions.push_back(bsf_rp0);
         }
@@ -1705,7 +1710,7 @@ void Parser::handleBANKSEL(const std::string& symbol, std::vector<ParsedInstruct
             bcf_rp1.f_reg = STATUS_REG;
             bcf_rp1.b_bit = RP1_BIT;
             bcf_rp1.line_number = current().line;
-            bcf_rp1.address = programCounter++;
+            bcf_rp1.address = programCounter - 1;  // Use adjusted address
             bcf_rp1.valid = true;
             generatedInstructions.push_back(bcf_rp1);
         } else {
@@ -1716,7 +1721,7 @@ void Parser::handleBANKSEL(const std::string& symbol, std::vector<ParsedInstruct
             bsf_rp1.f_reg = STATUS_REG;
             bsf_rp1.b_bit = RP1_BIT;
             bsf_rp1.line_number = current().line;
-            bsf_rp1.address = programCounter++;
+            bsf_rp1.address = programCounter - 1;  // Use adjusted address
             bsf_rp1.valid = true;
             generatedInstructions.push_back(bsf_rp1);
         }
@@ -1731,12 +1736,19 @@ void Parser::handlePAGESEL(const std::string& label, std::vector<ParsedInstructi
         std::string archName = (currentArch == Architecture::PIC16 ? "PIC16" : "PIC12");
         errorReporter.reportWarning(current().line, current().column,
             "PAGESEL is only for PIC18, not supported on " + archName, "", "");
+        // Still advance PC by 2 since PAGESEL always generates 2 instructions
+        programCounter += 2;
         return;
     }
 
+    // Always advance PC by 2 (PAGESEL always generates MOVLW + MOVWF)
+    // This ensures correct PC tracking even if symbol doesn't exist yet (first pass)
+    programCounter += 2;
+
     if (!symbolTable.hasSymbol(label)) {
-        errorReporter.reportError(current().line, current().column,
-            "PAGESEL: Undefined label '" + label + "'", "", "");
+        // In first pass, symbol might not be defined yet
+        // Don't report error - just skip code generation
+        // Second pass will handle it when symbol is available
         return;
     }
 
@@ -1751,7 +1763,7 @@ void Parser::handlePAGESEL(const std::string& label, std::vector<ParsedInstructi
     movlw.mnemonic = "MOVLW";
     movlw.k_value = pageValue;
     movlw.line_number = current().line;
-    movlw.address = programCounter++;
+    movlw.address = programCounter - 2;  // Use adjusted address since we already incremented
     movlw.valid = true;
     generatedInstructions.push_back(movlw);
 
@@ -1761,7 +1773,7 @@ void Parser::handlePAGESEL(const std::string& label, std::vector<ParsedInstructi
     movwf.mnemonic = "MOVWF";
     movwf.f_reg = 0xFA;  // PCLATH register in PIC18 (within 0-255 range for MOVWF)
     movwf.line_number = current().line;
-    movwf.address = programCounter++;
+    movwf.address = programCounter - 1;  // Use adjusted address since we already incremented
     movwf.valid = true;
     generatedInstructions.push_back(movwf);
 }
