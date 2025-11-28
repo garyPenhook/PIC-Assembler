@@ -22,6 +22,8 @@ set(COMMON_SOURCES
     src/device_specs.cpp
     src/expression.cpp
     src/cli.cpp
+    src/macro_table.cpp
+    src/preprocessor.cpp
 )
 
 # Main app sources
@@ -38,6 +40,8 @@ set(HEADERS
     src/device_specs.h
     src/expression.h
     src/cli.h
+    src/macro_table.h
+    src/preprocessor.h
 )
 
 # Create executable

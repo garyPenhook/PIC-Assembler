@@ -5,6 +5,7 @@
 #include "symbol_table.h"
 #include "error_reporter.h"
 #include "exceptions.h"
+#include "macro_table.h"
 #include <vector>
 #include <string>
 #include <stdexcept>
@@ -72,7 +73,21 @@ private:
     Architecture currentArch;
     std::vector<DataDefinition> dataDefinitions;
     std::vector<ConfigWord> configWords;
+    std::vector<ParsedInstruction> generatedInstructions;  // For DT/macros
     int defaultRadix;  // Default number base (DEC=10, HEX=16, OCT=8)
+
+    // CBLOCK state
+    bool insideCBLOCK;
+    uint16_t cblockAddress;
+
+    // MACRO state
+    MacroTable macroTable;
+    bool insideMacroDefinition;
+    MacroDefinition currentMacro;
+    std::vector<Token> macroBodyTokens;
+    int macroExpansionDepth;
+    int localLabelCounter;
+    static constexpr int MAX_MACRO_DEPTH = 100;
 
     // Helper functions
     Token& current();
@@ -97,6 +112,13 @@ private:
     void handlePAGESEL(const std::string& label, std::vector<ParsedInstruction>& instructions);
     void handleDataDirective(const std::string& directiveName);
     void handleConfigDirective();
+    void handleCBLOCK(const std::string& startAddrStr);
+    void handleDT();
+    void createRETLWInstruction(uint8_t literal);
+    void handleMACRO(const std::string& macroName);
+    void handleLOCAL();
+    std::vector<std::string> parseMacroArguments();
+    std::vector<ParsedInstruction> expandMacro(const std::string& macroName, int callLine);
 
     // Validation
     void validateOperands(ParsedInstruction& instr);

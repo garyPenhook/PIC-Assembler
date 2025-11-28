@@ -5,7 +5,9 @@
 #include <cctype>
 
 Parser::Parser(const std::vector<Token>& tokens, Architecture arch)
-    : tokens(tokens), currentPos(0), programCounter(0), currentArch(arch), defaultRadix(10) {}
+    : tokens(tokens), currentPos(0), programCounter(0), currentArch(arch), defaultRadix(10),
+      insideCBLOCK(false), cblockAddress(0), insideMacroDefinition(false),
+      macroExpansionDepth(0), localLabelCounter(0) {}
 
 Token& Parser::current() {
     static Token eof{TokenType::END_OF_FILE, "", 0, 0};
@@ -572,6 +574,53 @@ void Parser::parseDirective(const Token& directive) {
         }
         // Back up one position
         if (currentPos > 0) currentPos--;
+    } else if (dirName == "CBLOCK") {
+        // CBLOCK directive - sequential constant block
+        advance();  // Move past CBLOCK
+        std::string startAddr = "";
+        if (check(TokenType::DECIMAL_NUMBER) || check(TokenType::HEX_NUMBER) ||
+            check(TokenType::OCTAL_NUMBER) || check(TokenType::BINARY_NUMBER)) {
+            startAddr = current().value;
+            advance();  // Skip address
+        }
+        handleCBLOCK(startAddr);
+        // Back up one position
+        if (currentPos > 0) currentPos--;
+    } else if (dirName == "ENDC") {
+        // ENDC without CBLOCK
+        if (!insideCBLOCK) {
+            errorReporter.reportError(directive.line, directive.column, "ENDC without CBLOCK", "", "");
+        }
+        insideCBLOCK = false;
+    } else if (dirName == "DT") {
+        // DT directive - Define Table (generates RETLW instructions)
+        handleDT();
+        // Back up one position
+        if (currentPos > 0) currentPos--;
+    } else if (dirName == "MACRO") {
+        // MACRO definition
+        advance();  // Move past MACRO keyword
+        if (check(TokenType::IDENTIFIER)) {
+            std::string macroName = current().value;
+            handleMACRO(macroName);
+        } else {
+            errorReporter.reportError(directive.line, directive.column, "MACRO requires a name", "", "");
+        }
+        // Back up one position
+        if (currentPos > 0) currentPos--;
+    } else if (dirName == "ENDM") {
+        // ENDM outside of MACRO
+        errorReporter.reportError(directive.line, directive.column, "ENDM without MACRO", "", "");
+    } else if (dirName == "LOCAL") {
+        // LOCAL directive (processed during macro definition)
+        if (!insideMacroDefinition) {
+            errorReporter.reportError(directive.line, directive.column, "LOCAL outside of MACRO", "", "");
+        }
+    } else if (dirName == "EXITM") {
+        // EXITM outside of MACRO (processed during expansion)
+        if (!insideMacroDefinition) {
+            errorReporter.reportError(directive.line, directive.column, "EXITM outside of MACRO", "", "");
+        }
     }
 }
 
@@ -628,13 +677,41 @@ void Parser::firstPass() {
                         advance();  // Skip value
                     }
                     continue;
+                } else if (dirName == "MACRO") {
+                    // Handle MACRO: NAME MACRO parameters...ENDM
+                    std::string macroName = identToken.value;
+                    advance();  // Skip identifier (macro name)
+                    advance();  // Skip MACRO keyword
+                    handleMACRO(macroName);
+                    continue;
                 }
             }
         }
 
         // Check for directives
         if (check(TokenType::DIRECTIVE)) {
+            std::string dirName = current().value;
+            std::transform(dirName.begin(), dirName.end(), dirName.begin(), ::toupper);
+
+            // Handle MACRO specially - need to register in symbol table but don't parseDirective
+            if (dirName == "MACRO") {
+                advance();  // Move past MACRO keyword
+                if (check(TokenType::IDENTIFIER)) {
+                    std::string macroName = current().value;
+                    handleMACRO(macroName);
+                    // handleMACRO advances past ENDM, so continue
+                    continue;
+                }
+            }
+
             parseDirective(current());
+
+            // If it was a DT directive, the PC is already advanced in handleDT
+            // Clear the generated instructions since we're only in first pass
+            if (dirName == "DT") {
+                generatedInstructions.clear();
+            }
+
             advance();  // Skip past the directive and its operands
             continue;
         }
@@ -659,9 +736,10 @@ std::vector<ParsedInstruction> Parser::parse() {
     // Two-pass assembly
     firstPass();  // First pass: collect all labels
 
-    // Clear data definitions from first pass before second pass
+    // Clear data definitions and generated instructions from first pass before second pass
     // (they were only needed to advance PC during first pass)
     dataDefinitions.clear();
+    generatedInstructions.clear();
 
     // Second pass: generate code using complete symbol table
     std::vector<ParsedInstruction> instructions;
@@ -707,13 +785,69 @@ std::vector<ParsedInstruction> Parser::parse() {
                         advance();  // Skip value
                     }
                     continue;
+                } else if (dirName == "MACRO") {
+                    // Skip MACRO definitions in second pass (already registered in first pass)
+                    advance();  // Skip identifier (macro name)
+                    advance();  // Skip MACRO keyword
+                    // Skip macro parameters
+                    while (check(TokenType::IDENTIFIER) || check(TokenType::COMMA)) {
+                        advance();
+                    }
+                    // Skip macro body until ENDM
+                    int depth = 1;
+                    while (!check(TokenType::END_OF_FILE) && depth > 0) {
+                        if (check(TokenType::DIRECTIVE)) {
+                            std::string innerDir = current().value;
+                            std::transform(innerDir.begin(), innerDir.end(), innerDir.begin(), ::toupper);
+                            if (innerDir == "MACRO") depth++;
+                            else if (innerDir == "ENDM") depth--;
+                        }
+                        advance();
+                    }
+                    continue;
                 }
             }
         }
 
         // Check for directives
         if (check(TokenType::DIRECTIVE)) {
+            std::string dirName = current().value;
+            std::transform(dirName.begin(), dirName.end(), dirName.begin(), ::toupper);
+
+            // Skip MACRO definitions in second pass (already registered in first pass)
+            if (dirName == "MACRO") {
+                advance();  // Move past MACRO keyword
+                if (check(TokenType::IDENTIFIER)) {
+                    advance();  // Skip macro name
+                }
+                // Skip macro parameters
+                while (check(TokenType::IDENTIFIER) || check(TokenType::COMMA)) {
+                    advance();
+                }
+                // Skip macro body until ENDM
+                int depth = 1;
+                while (!check(TokenType::END_OF_FILE) && depth > 0) {
+                    if (check(TokenType::DIRECTIVE)) {
+                        std::string innerDir = current().value;
+                        std::transform(innerDir.begin(), innerDir.end(), innerDir.begin(), ::toupper);
+                        if (innerDir == "MACRO") depth++;
+                        else if (innerDir == "ENDM") depth--;
+                    }
+                    advance();
+                }
+                continue;
+            }
+
             parseDirective(current());
+
+            // If it was a DT directive, add generated RETLW instructions
+            if (dirName == "DT" && !generatedInstructions.empty()) {
+                for (auto& instr : generatedInstructions) {
+                    instructions.push_back(instr);
+                }
+                generatedInstructions.clear();
+            }
+
             advance();  // Skip past the directive and its operands
             continue;
         }
@@ -728,6 +862,19 @@ std::vector<ParsedInstruction> Parser::parse() {
             } catch (const ParseError& e) {
                 // Error already reported
             }
+            continue;
+        }
+
+        // Check for macro invocation
+        if (check(TokenType::IDENTIFIER) && macroTable.hasMacro(current().value)) {
+            std::string macroName = current().value;
+            int callLine = current().line;
+            advance();
+
+            auto macroInstructions = expandMacro(macroName, callLine);
+            instructions.insert(instructions.end(),
+                               macroInstructions.begin(),
+                               macroInstructions.end());
             continue;
         }
 
@@ -890,4 +1037,278 @@ void Parser::handleConfigDirective() {
     config.lineNumber = lineNumber;
 
     configWords.push_back(config);
+}
+
+void Parser::handleCBLOCK(const std::string& startAddrStr) {
+    if (insideCBLOCK) {
+        errorReporter.reportError(current().line, current().column, "Nested CBLOCK not allowed", "", "");
+        return;
+    }
+
+    // Parse starting address (optional - continues from last if omitted)
+    if (!startAddrStr.empty()) {
+        cblockAddress = parseNumber(startAddrStr);
+    }
+
+    insideCBLOCK = true;
+
+    // Process CBLOCK body
+    while (!check(TokenType::END_OF_FILE)) {
+        if (check(TokenType::DIRECTIVE)) {
+            std::string dirName = current().value;
+            std::transform(dirName.begin(), dirName.end(), dirName.begin(), ::toupper);
+
+            if (dirName == "ENDC") {
+                insideCBLOCK = false;
+                advance();
+                return;
+            }
+        }
+
+        if (check(TokenType::IDENTIFIER)) {
+            std::string varName = current().value;
+            uint16_t size = 1;
+
+            advance();
+
+            // Check for :size suffix (e.g., var3:2)
+            if (check(TokenType::COLON)) {
+                advance();
+                if (check(TokenType::DECIMAL_NUMBER) || check(TokenType::HEX_NUMBER) ||
+                    check(TokenType::OCTAL_NUMBER) || check(TokenType::BINARY_NUMBER)) {
+                    size = parseNumber(current().value);
+                    advance();
+                } else {
+                    errorReporter.reportError(current().line, current().column, "Expected size after ':'", "", "");
+                }
+            }
+
+            // Add constant to symbol table
+            symbolTable.addConstant(varName, cblockAddress);
+            cblockAddress += size;
+        } else {
+            advance();
+        }
+    }
+
+    errorReporter.reportError(current().line, current().column, "CBLOCK without ENDC", "", "");
+}
+
+void Parser::handleDT() {
+    advance();  // Skip DT directive
+
+    bool expectingValue = true;
+
+    while (!check(TokenType::END_OF_FILE) &&
+           !check(TokenType::MNEMONIC) &&
+           !check(TokenType::DIRECTIVE) &&
+           !(check(TokenType::IDENTIFIER) && peek().type != TokenType::COMMA)) {
+
+        if (check(TokenType::STRING)) {
+            // Process each character in string
+            std::string str = current().value;
+            // Remove quotes if present
+            if (!str.empty() && str.front() == '"' && str.back() == '"') {
+                str = str.substr(1, str.length() - 2);
+            }
+
+            for (char c : str) {
+                createRETLWInstruction(static_cast<uint8_t>(c));
+            }
+            advance();
+            expectingValue = false;
+        }
+        else if (check(TokenType::DECIMAL_NUMBER) ||
+                 check(TokenType::HEX_NUMBER) ||
+                 check(TokenType::BINARY_NUMBER) ||
+                 check(TokenType::OCTAL_NUMBER)) {
+
+            uint16_t value = parseNumber(current().value);
+            if (value > 255) {
+                errorReporter.reportWarning(current().line, current().column,
+                    "DT value " + std::to_string(value) + " truncated to 8 bits", "", "");
+            }
+            createRETLWInstruction(value & 0xFF);
+            advance();
+            expectingValue = false;
+        }
+        else if (check(TokenType::IDENTIFIER) && symbolTable.hasSymbol(current().value)) {
+            // Symbol reference
+            uint16_t value = symbolTable.getSymbol(current().value);
+            if (value > 255) {
+                errorReporter.reportWarning(current().line, current().column,
+                    "DT symbol value " + std::to_string(value) + " truncated to 8 bits", "", "");
+            }
+            createRETLWInstruction(value & 0xFF);
+            advance();
+            expectingValue = false;
+        }
+        else if (check(TokenType::COMMA)) {
+            if (expectingValue) {
+                errorReporter.reportError(current().line, current().column,
+                    "Expected value after comma", "", "");
+            }
+            advance();
+            expectingValue = true;
+        }
+        else {
+            break;  // End of DT values
+        }
+    }
+}
+
+void Parser::createRETLWInstruction(uint8_t literal) {
+    ParsedInstruction instr{};
+    instr.type = InstructionType::RETLW;
+    instr.mnemonic = "RETLW";
+    instr.k_value = literal;
+    instr.address = programCounter;
+    instr.line_number = current().line;
+    instr.valid = true;
+
+    generatedInstructions.push_back(instr);
+    programCounter++;
+}
+
+void Parser::handleMACRO(const std::string& macroName) {
+    if (insideMacroDefinition) {
+        errorReporter.reportError(current().line, current().column, "Nested MACRO definitions not allowed", "", "");
+        return;
+    }
+
+    insideMacroDefinition = true;
+    currentMacro = MacroDefinition{};
+    currentMacro.name = macroName;
+    currentMacro.definitionLine = current().line;
+    currentMacro.parameters.clear();
+    currentMacro.localLabels.clear();
+    macroBodyTokens.clear();
+
+    // Note: macro name and MACRO keyword already advanced past by caller
+
+    // Parse parameters (space or comma separated)
+    // Stop at: MNEMONIC, DIRECTIVE, end of line, or non-parameter token
+    uint32_t macroLine = current().line;
+    while (check(TokenType::IDENTIFIER) || check(TokenType::COMMA)) {
+        if (check(TokenType::COMMA)) {
+            advance();
+            continue;
+        }
+
+        // Stop if we hit a different line (macro parameters should be on first line)
+        if (current().line != macroLine) {
+            break;
+        }
+
+        currentMacro.parameters.push_back(current().value);
+        advance();
+    }
+
+    // Collect body tokens until ENDM
+    while (!check(TokenType::END_OF_FILE)) {
+        if (check(TokenType::DIRECTIVE)) {
+            std::string dirName = current().value;
+            std::transform(dirName.begin(), dirName.end(), dirName.begin(), ::toupper);
+
+            if (dirName == "ENDM") {
+                currentMacro.body = macroBodyTokens;
+                macroTable.addMacro(currentMacro.name, currentMacro);
+                insideMacroDefinition = false;
+                advance();
+                return;
+            }
+            else if (dirName == "LOCAL") {
+                // Parse LOCAL labels
+                advance();
+                while (check(TokenType::IDENTIFIER) || check(TokenType::COMMA)) {
+                    if (check(TokenType::COMMA)) {
+                        advance();
+                        continue;
+                    }
+                    currentMacro.localLabels.push_back(current().value);
+                    advance();
+                }
+                continue;  // Don't add LOCAL directive to body
+            }
+        }
+
+        macroBodyTokens.push_back(current());
+        advance();
+    }
+
+    errorReporter.reportError(current().line, current().column, "MACRO without ENDM", "", "");
+}
+
+void Parser::handleLOCAL() {
+    // LOCAL directive is handled within handleMACRO
+    // This is just a placeholder in case it's called elsewhere
+}
+
+std::vector<std::string> Parser::parseMacroArguments() {
+    std::vector<std::string> args;
+
+    // Track the line number where macro invocation starts
+    uint32_t startLine = current().line;
+
+    while (!check(TokenType::END_OF_FILE) &&
+           current().line == startLine &&  // Stop at end of line
+           !check(TokenType::MNEMONIC) &&
+           !check(TokenType::DIRECTIVE) &&
+           !(check(TokenType::IDENTIFIER) && peek().type == TokenType::COLON)) {
+
+        if (check(TokenType::COMMA)) {
+            advance();
+            continue;
+        }
+
+        if (check(TokenType::IDENTIFIER) || check(TokenType::DECIMAL_NUMBER) ||
+            check(TokenType::HEX_NUMBER) || check(TokenType::BINARY_NUMBER) ||
+            check(TokenType::OCTAL_NUMBER)) {
+            args.push_back(current().value);
+            advance();
+        } else {
+            break;
+        }
+    }
+
+    return args;
+}
+
+std::vector<ParsedInstruction> Parser::expandMacro(const std::string& macroName, int callLine) {
+    if (macroExpansionDepth >= MAX_MACRO_DEPTH) {
+        errorReporter.reportError(callLine, 0, "Macro expansion depth exceeded (recursive macro?)", "", "");
+        return {};
+    }
+
+    macroExpansionDepth++;
+
+    // Parse arguments
+    std::vector<std::string> args = parseMacroArguments();
+
+    // Expand macro
+    try {
+        std::vector<Token> expandedTokens = macroTable.expand(macroName, args, callLine, localLabelCounter);
+
+        // Create sub-parser for expanded tokens
+        Parser macroParser(expandedTokens, currentArch);
+        macroParser.symbolTable = this->symbolTable;
+        macroParser.programCounter = this->programCounter;
+        macroParser.macroTable = this->macroTable;
+        macroParser.macroExpansionDepth = this->macroExpansionDepth;
+        macroParser.localLabelCounter = this->localLabelCounter;
+
+        auto macroInstructions = macroParser.parse();
+
+        // Update our state
+        this->programCounter = macroParser.programCounter;
+        this->localLabelCounter = macroParser.localLabelCounter;
+
+        macroExpansionDepth--;
+
+        return macroInstructions;
+    } catch (const std::exception& e) {
+        errorReporter.reportError(callLine, 0, std::string("Macro expansion error: ") + e.what(), "", "");
+        macroExpansionDepth--;
+        return {};
+    }
 }

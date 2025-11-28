@@ -64,9 +64,12 @@ bool Lexer::isMnemonic(const std::string& str) const {
 
 bool Lexer::isDirective(const std::string& str) const {
     static const std::vector<std::string> directives = {
-        "ORG", "END", "EQU", "SET", "INCLUDE", "DEFINE", "IFDEF", "ENDIF",
+        // Preprocessor-only directives (removed: INCLUDE, DEFINE, IFDEF, IFNDEF, IF, ELIF, ELSE, ENDIF, ERROR, WARNING, LINE)
+        // They are processed before the lexer and won't appear in the token stream
+        "ORG", "END", "EQU", "SET",
         "DB", "DW", "DA", "DATA", "PROCESSOR", "__CONFIG", "CONFIG",
-        "BANKSEL", "PAGESEL", "UDATA", "CODE", "RADIX"
+        "BANKSEL", "PAGESEL", "UDATA", "CODE", "RADIX",
+        "CBLOCK", "ENDC", "DT", "MACRO", "ENDM", "LOCAL", "EXITM"
     };
     auto upper = str;
     std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);

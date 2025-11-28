@@ -26,8 +26,19 @@ std::vector<AssembledCode> Assembler::assemble(const std::string& source) {
         }
 
         try {
+            // Preprocessing stage - process #define, #ifdef, #include, etc.
+            Preprocessor preprocessor(".");
+            std::string preprocessedSource = preprocessor.process(source, "assembly.asm");
+
+            // Check for preprocessing errors
+            if (!preprocessor.wasSuccessful()) {
+                lastErrors = std::make_shared<ErrorReporter>(preprocessor.getErrors());
+                setError("Preprocessing failed with " + std::to_string(preprocessor.getErrors().getErrorCount()) + " error(s)");
+                return {};
+            }
+
             // Lexical analysis
-            Lexer lexer(source);
+            Lexer lexer(preprocessedSource);
             std::vector<Token> tokens = lexer.tokenize();
 
             if (tokens.empty()) {
