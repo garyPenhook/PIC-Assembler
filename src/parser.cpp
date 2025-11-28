@@ -561,6 +561,28 @@ void Parser::parseDirective(const Token& directive) {
         }
         // Back up one position
         if (currentPos > 0) currentPos--;
+    } else if (dirName == "BANKSEL") {
+        // BANKSEL symbol - Automatic bank selection (PIC16)
+        advance();  // Move to symbol
+        if (check(TokenType::IDENTIFIER)) {
+            std::string symbol = current().value;
+            handleBANKSEL(symbol, generatedInstructions);
+            advance();
+        } else {
+            errorReporter.reportError(directive.line, directive.column, "BANKSEL requires a symbol name", "", "");
+        }
+        if (currentPos > 0) currentPos--;
+    } else if (dirName == "PAGESEL") {
+        // PAGESEL label - Automatic page selection (PIC18)
+        advance();  // Move to label
+        if (check(TokenType::IDENTIFIER)) {
+            std::string label = current().value;
+            handlePAGESEL(label, generatedInstructions);
+            advance();
+        } else {
+            errorReporter.reportError(directive.line, directive.column, "PAGESEL requires a label name", "", "");
+        }
+        if (currentPos > 0) currentPos--;
     } else if (dirName == "__CONFIG" || dirName == "CONFIG") {
         // Configuration directive
         handleConfigDirective();
@@ -1588,4 +1610,158 @@ void Parser::handleENDIF() {
 std::map<std::string, uint32_t> Parser::buildSymbolMap() const {
     // Build a map of all symbols for expression evaluation
     return symbolTable.getAllSymbols();
+}
+
+void Parser::handleBANKSEL(const std::string& symbol, std::vector<ParsedInstruction>& instructions) {
+    // BANKSEL - Automatic bank selection for PIC16/PIC18
+    // For PIC16: Sets RP1:RP0 bits in STATUS register
+    // For PIC18: Sets BSR register
+
+    if (currentArch == Architecture::PIC18) {
+        // PIC18 - Set BSR (Bank Select Register) for indirect addressing
+        // BSR[3:0] selects the 256-byte RAM bank
+        if (!symbolTable.hasSymbol(symbol)) {
+            errorReporter.reportError(current().line, current().column,
+                "BANKSEL: Undefined symbol '" + symbol + "'", "", "");
+            return;
+        }
+
+        uint16_t address = symbolTable.getSymbol(symbol);
+        uint8_t bankNum = (address >> 8) & 0x0F;  // Bank = address / 256
+
+        // Generate: MOVLW bank_number; MOVWF BSR
+        ParsedInstruction movlw;
+        movlw.type = InstructionType::MOVLW;
+        movlw.mnemonic = "MOVLW";
+        movlw.k_value = bankNum;
+        movlw.line_number = current().line;
+        movlw.address = programCounter++;
+        movlw.valid = true;
+        generatedInstructions.push_back(movlw);
+
+        // MOVWF BSR (0xE8 is BSR in PIC18 data memory, but as file register it's 0xE8 in lower 256)
+        ParsedInstruction movwf;
+        movwf.type = InstructionType::MOVWF;
+        movwf.mnemonic = "MOVWF";
+        movwf.f_reg = 0xE8;  // BSR register in PIC18 (within 0-255 range for MOVWF)
+        movwf.line_number = current().line;
+        movwf.address = programCounter++;
+        movwf.valid = true;
+        generatedInstructions.push_back(movwf);
+
+    } else if (currentArch == Architecture::PIC16) {
+        // PIC16 - Set RP1:RP0 bits in STATUS register
+        // Bank 0: RP1=0, RP0=0
+        // Bank 1: RP1=0, RP0=1
+        // Bank 2: RP1=1, RP0=0
+        // Bank 3: RP1=1, RP0=1
+
+        if (!symbolTable.hasSymbol(symbol)) {
+            errorReporter.reportError(current().line, current().column,
+                "BANKSEL: Undefined symbol '" + symbol + "'", "", "");
+            return;
+        }
+
+        uint16_t address = symbolTable.getSymbol(symbol);
+        uint8_t bankNum = (address / 128) & 0x03;  // Bank = address / 128, max 4 banks
+        bool rp0 = (bankNum & 0x01) != 0;  // RP0 is bit 5 of STATUS
+        bool rp1 = (bankNum & 0x02) != 0;  // RP1 is bit 6 of STATUS
+
+        // STATUS register is at address 0x03, RP1 is bit 6, RP0 is bit 5
+        const uint8_t STATUS_REG = 0x03;
+        const uint8_t RP0_BIT = 5;
+        const uint8_t RP1_BIT = 6;
+
+        // Generate BCF/BSF instructions to set appropriate bits
+        if (!rp0) {
+            // Clear RP0: BCF STATUS, 5
+            ParsedInstruction bcf_rp0;
+            bcf_rp0.type = InstructionType::BCF;
+            bcf_rp0.mnemonic = "BCF";
+            bcf_rp0.f_reg = STATUS_REG;
+            bcf_rp0.b_bit = RP0_BIT;
+            bcf_rp0.line_number = current().line;
+            bcf_rp0.address = programCounter++;
+            bcf_rp0.valid = true;
+            generatedInstructions.push_back(bcf_rp0);
+        } else {
+            // Set RP0: BSF STATUS, 5
+            ParsedInstruction bsf_rp0;
+            bsf_rp0.type = InstructionType::BSF;
+            bsf_rp0.mnemonic = "BSF";
+            bsf_rp0.f_reg = STATUS_REG;
+            bsf_rp0.b_bit = RP0_BIT;
+            bsf_rp0.line_number = current().line;
+            bsf_rp0.address = programCounter++;
+            bsf_rp0.valid = true;
+            generatedInstructions.push_back(bsf_rp0);
+        }
+
+        if (!rp1) {
+            // Clear RP1: BCF STATUS, 6
+            ParsedInstruction bcf_rp1;
+            bcf_rp1.type = InstructionType::BCF;
+            bcf_rp1.mnemonic = "BCF";
+            bcf_rp1.f_reg = STATUS_REG;
+            bcf_rp1.b_bit = RP1_BIT;
+            bcf_rp1.line_number = current().line;
+            bcf_rp1.address = programCounter++;
+            bcf_rp1.valid = true;
+            generatedInstructions.push_back(bcf_rp1);
+        } else {
+            // Set RP1: BSF STATUS, 6
+            ParsedInstruction bsf_rp1;
+            bsf_rp1.type = InstructionType::BSF;
+            bsf_rp1.mnemonic = "BSF";
+            bsf_rp1.f_reg = STATUS_REG;
+            bsf_rp1.b_bit = RP1_BIT;
+            bsf_rp1.line_number = current().line;
+            bsf_rp1.address = programCounter++;
+            bsf_rp1.valid = true;
+            generatedInstructions.push_back(bsf_rp1);
+        }
+    }
+}
+
+void Parser::handlePAGESEL(const std::string& label, std::vector<ParsedInstruction>& instructions) {
+    // PAGESEL - Automatic page selection for PIC18
+    // Sets PCLATH[7:3] to select the 2KB page
+
+    if (currentArch != Architecture::PIC18) {
+        std::string archName = (currentArch == Architecture::PIC16 ? "PIC16" : "PIC12");
+        errorReporter.reportWarning(current().line, current().column,
+            "PAGESEL is only for PIC18, not supported on " + archName, "", "");
+        return;
+    }
+
+    if (!symbolTable.hasSymbol(label)) {
+        errorReporter.reportError(current().line, current().column,
+            "PAGESEL: Undefined label '" + label + "'", "", "");
+        return;
+    }
+
+    uint16_t address = symbolTable.getSymbol(label);
+    // Page = (address >> 11) & 0xFF (divide by 2048, max 255)
+    // But we shift right by 8 from the page number to get the byte value for PCLATH
+    uint8_t pageValue = (address >> 8) & 0xE0;  // Bits 7-5 of page number go to PCLATH[7:5]
+
+    // Generate: MOVLW page_value; MOVWF PCLATH
+    ParsedInstruction movlw;
+    movlw.type = InstructionType::MOVLW;
+    movlw.mnemonic = "MOVLW";
+    movlw.k_value = pageValue;
+    movlw.line_number = current().line;
+    movlw.address = programCounter++;
+    movlw.valid = true;
+    generatedInstructions.push_back(movlw);
+
+    // MOVWF PCLATH (0xFA is PCLATH in PIC18 data memory, within 0-255 range for MOVWF)
+    ParsedInstruction movwf;
+    movwf.type = InstructionType::MOVWF;
+    movwf.mnemonic = "MOVWF";
+    movwf.f_reg = 0xFA;  // PCLATH register in PIC18 (within 0-255 range for MOVWF)
+    movwf.line_number = current().line;
+    movwf.address = programCounter++;
+    movwf.valid = true;
+    generatedInstructions.push_back(movwf);
 }
