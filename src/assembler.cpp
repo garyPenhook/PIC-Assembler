@@ -16,6 +16,7 @@ Assembler::Assembler(Architecture arch)
 std::vector<AssembledCode> Assembler::assemble(const std::string& source) {
     generatedCode.clear();
     generatedData.clear();
+    configWords.clear();
     successful = false;
 
     try {
@@ -48,6 +49,9 @@ std::vector<AssembledCode> Assembler::assemble(const std::string& source) {
 
             // Store data definitions from parser
             generatedData = parser.getDataDefinitions();
+
+            // Store configuration words from parser
+            configWords = parser.getConfigWords();
 
             // Code generation
             InstructionSet& iset = InstructionSet::getInstance();

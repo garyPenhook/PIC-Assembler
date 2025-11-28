@@ -66,11 +66,12 @@ std::string HexGenerator::createRecord(RecordType type, uint16_t address,
 }
 
 std::string HexGenerator::generateHex(const std::vector<AssembledCode>& code,
-                                       const std::vector<DataDefinition>& data) {
+                                       const std::vector<DataDefinition>& data,
+                                       const std::vector<ConfigWord>& config) {
     std::stringstream result;
 
-    if (code.empty() && data.empty()) {
-        lastError = "No code or data to generate HEX from";
+    if (code.empty() && data.empty() && config.empty()) {
+        lastError = "No code, data, or config to generate HEX from";
         return "";
     }
 
@@ -101,6 +102,29 @@ std::string HexGenerator::generateHex(const std::vector<AssembledCode>& code,
             ? dataDef.address * 2
             : dataDef.address;
         items.push_back({byteAddress, dataDef.bytes});
+    }
+
+    // Add configuration words
+    for (const auto& configWord : config) {
+        // CONFIG words are stored at their absolute addresses
+        // PIC16/PIC12: 0x2007 (word address) -> 0x400E (byte address = 0x2007 * 2)
+        // PIC18: 0x300000 (byte address)
+        uint32_t byteAddress;
+        if (targetArch == Architecture::PIC16 || targetArch == Architecture::PIC12) {
+            // For PIC16/PIC12, config address is a word address
+            byteAddress = configWord.address * 2;
+        } else {
+            // For PIC18, config address is already a byte address
+            byteAddress = configWord.address;
+        }
+
+        // CONFIG word is 14-bit for PIC16, 8-bit for PIC18
+        // Store as little-endian bytes
+        uint8_t lowByte = configWord.value & 0xFF;
+        uint8_t highByte = (configWord.value >> 8) & 0xFF;
+
+        std::vector<uint8_t> configData{lowByte, highByte};
+        items.push_back({byteAddress, configData});
     }
 
     // Sort items by address
@@ -147,7 +171,8 @@ std::string HexGenerator::generateHex(const std::vector<AssembledCode>& code,
 
 bool HexGenerator::writeToFile(const std::string& filename,
                                const std::vector<AssembledCode>& code,
-                               const std::vector<DataDefinition>& data) {
+                               const std::vector<DataDefinition>& data,
+                               const std::vector<ConfigWord>& config) {
     try {
         // Validate filename
         if (filename.empty()) {
@@ -156,7 +181,7 @@ bool HexGenerator::writeToFile(const std::string& filename,
 
         try {
             // Generate HEX content
-            std::string hexContent = generateHex(code, data);
+            std::string hexContent = generateHex(code, data, config);
 
             if (hexContent.empty()) {
                 throw HexGenerationException("No HEX content was generated from input code and data");

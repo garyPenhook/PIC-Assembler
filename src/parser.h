@@ -13,6 +13,7 @@
 
 // Forward declaration to avoid circular include
 struct DataDefinition;
+struct ConfigWord;
 
 struct ParsedInstruction {
     InstructionType type;
@@ -52,6 +53,9 @@ public:
     // Get parsed data definitions
     const std::vector<DataDefinition>& getDataDefinitions() const { return dataDefinitions; }
 
+    // Get parsed configuration words
+    const std::vector<ConfigWord>& getConfigWords() const { return configWords; }
+
     // Get symbol table after parsing
     const SymbolTable& getSymbolTable() const { return symbolTable; }
 
@@ -67,6 +71,7 @@ private:
     ErrorReporter errorReporter;
     Architecture currentArch;
     std::vector<DataDefinition> dataDefinitions;
+    std::vector<ConfigWord> configWords;
 
     // Helper functions
     Token& current();
@@ -88,6 +93,7 @@ private:
     void handleBANKSEL(const std::string& label, std::vector<ParsedInstruction>& instructions);
     void handlePAGESEL(const std::string& label, std::vector<ParsedInstruction>& instructions);
     void handleDataDirective(const std::string& directiveName);
+    void handleConfigDirective();
 
     // Validation
     void validateOperands(ParsedInstruction& instr);

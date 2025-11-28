@@ -24,6 +24,13 @@ struct DataDefinition {
     int lineNumber;
 };
 
+struct ConfigWord {
+    uint32_t address;      // Configuration word address (0x2007 for PIC16, 0x300000+ for PIC18)
+    uint16_t value;        // Configuration bits value
+    std::string sourceCode;
+    int lineNumber;
+};
+
 class Assembler {
 public:
     // Constructor with architecture parameter
@@ -43,6 +50,9 @@ public:
 
     // Get generated data definitions
     const std::vector<DataDefinition>& getDataDefinitions() const { return generatedData; }
+
+    // Get configuration words
+    const std::vector<ConfigWord>& getConfigWords() const { return configWords; }
 
     // Get target architecture
     Architecture getArchitecture() const { return targetArch; }
@@ -65,6 +75,7 @@ public:
 private:
     std::vector<AssembledCode> generatedCode;
     std::vector<DataDefinition> generatedData;
+    std::vector<ConfigWord> configWords;
     std::string lastError;
     bool successful;
     Architecture targetArch;

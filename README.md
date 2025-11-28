@@ -656,8 +656,37 @@ loop:           ; Another label
 ```asm
 ORG 0x0000      ; Set program origin
 EQU CONST=0x20  ; Define constant
+__CONFIG 0x3F72 ; Set configuration bits
 END             ; End of program
 ```
+
+**Configuration Bits (`__CONFIG` / `CONFIG`):**
+
+The `__CONFIG` directive sets the PIC microcontroller's configuration fuses. These control critical settings like oscillator type, watchdog timer, brown-out reset, and more.
+
+```asm
+; Direct hex value
+__CONFIG 0x3F72
+
+; Using symbolic names (define with EQU first)
+_FOSC_INTRC    EQU 0x3FFC   ; Internal RC oscillator
+_WDTE_OFF      EQU 0x3FFB   ; Watchdog Timer disabled
+_PWRTE_ON      EQU 0x3FF7   ; Power-up Timer enabled
+_MCLRE_OFF     EQU 0x3FDF   ; MCLR pin is digital I/O
+
+__CONFIG _FOSC_INTRC & _WDTE_OFF & _PWRTE_ON & _MCLRE_OFF
+```
+
+**Configuration Word Addresses:**
+- **PIC12/PIC16:** CONFIG stored at address `0x2007` (14-bit word)
+- **PIC18:** CONFIG starts at address `0x300000` (8-bit bytes, multiple CONFIG registers)
+
+**Important Notes:**
+- Configuration bits are **NOT** optional - every real PIC program needs them
+- Without CONFIG, the device may not start correctly (wrong oscillator, watchdog resets, etc.)
+- Consult your device datasheet for specific CONFIG bit definitions
+- See `.github/copilot-examples/pic16-config-bits.asm` for common PIC16 CONFIG definitions
+- See `.github/copilot-examples/pic18-config-bits.asm` for common PIC18 CONFIG definitions
 
 #### Number Formats
 ```asm

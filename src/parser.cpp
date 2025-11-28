@@ -464,12 +464,8 @@ void Parser::parseDirective(const Token& directive) {
         // Back up one position
         if (currentPos > 0) currentPos--;
     } else if (dirName == "__CONFIG" || dirName == "CONFIG") {
-        // Configuration directive - skip for now
-        advance();  // Move past directive
-        while (!check(TokenType::END_OF_FILE) && !check(TokenType::MNEMONIC) &&
-               !check(TokenType::DIRECTIVE) && !check(TokenType::IDENTIFIER)) {
-            advance();
-        }
+        // Configuration directive
+        handleConfigDirective();
         // Back up one position
         if (currentPos > 0) currentPos--;
     }
@@ -609,4 +605,115 @@ std::vector<ParsedInstruction> Parser::parse() {
     }
 
     return instructions;
+}
+
+void Parser::handleConfigDirective() {
+    // Save line number for error reporting
+    int lineNumber = current().line;
+    std::string sourceLine = current().value;
+
+    // Move past CONFIG/__CONFIG directive
+    advance();
+
+    // Parse the configuration value
+    // Supports: __CONFIG 0x3F72 or __CONFIG _FOSC_INTRC & _WDTE_OFF & ...
+    uint16_t configValue = 0xFFFF;  // Default: all bits set (unprogrammed state)
+    bool firstOperand = true;
+
+    // Collect all tokens until we hit end of line/file or another directive
+    while (!check(TokenType::END_OF_FILE) &&
+           !check(TokenType::MNEMONIC) &&
+           !check(TokenType::DIRECTIVE)) {
+
+        if (check(TokenType::HEX_NUMBER) || check(TokenType::DECIMAL_NUMBER) || check(TokenType::BINARY_NUMBER)) {
+            // Direct numeric value
+            uint16_t value = parseNumber(current().value);
+            if (firstOperand) {
+                configValue = value;
+                firstOperand = false;
+            } else {
+                // AND with previous value
+                configValue &= value;
+            }
+            sourceLine += " " + current().value;
+            advance();
+        } else if (check(TokenType::IDENTIFIER)) {
+            // Symbolic name (e.g., _FOSC_INTRC, _WDTE_OFF)
+            std::string symbol = current().value;
+            sourceLine += " " + symbol;
+
+            // Try to resolve from symbol table
+            if (symbolTable.hasSymbol(symbol)) {
+                uint16_t value = symbolTable.getSymbol(symbol);
+                if (firstOperand) {
+                    configValue = value;
+                    firstOperand = false;
+                } else {
+                    // AND with previous value
+                    configValue &= value;
+                }
+            } else {
+                // Symbol not defined - report warning but continue
+                errorReporter.reportWarning(lineNumber, 0,
+                    "CONFIG symbol '" + symbol + "' not defined, treating as 0xFFFF",
+                    "Define the symbol with EQU or use numeric value", "");
+            }
+            advance();
+        } else if (current().value == "&") {
+            // AND operator - just skip it
+            sourceLine += " &";
+            advance();
+        } else if (current().value == "|") {
+            // OR operator
+            sourceLine += " |";
+            advance();
+            // Next value will be ORed
+            if (check(TokenType::HEX_NUMBER) || check(TokenType::DECIMAL_NUMBER)) {
+                uint16_t value = parseNumber(current().value);
+                configValue |= value;
+                sourceLine += " " + current().value;
+                advance();
+            } else if (check(TokenType::IDENTIFIER)) {
+                std::string symbol = current().value;
+                if (symbolTable.hasSymbol(symbol)) {
+                    configValue |= symbolTable.getSymbol(symbol);
+                }
+                sourceLine += " " + symbol;
+                advance();
+            }
+        } else {
+            // Unknown token, skip it
+            advance();
+        }
+
+        // Stop at comma (for potential future multi-word CONFIG support)
+        if (current().value == ",") {
+            break;
+        }
+    }
+
+    // Determine CONFIG word address based on architecture
+    uint32_t configAddress;
+    switch (currentArch) {
+        case Architecture::PIC12:
+            configAddress = 0x2007;  // PIC12 baseline config at 0x2007
+            break;
+        case Architecture::PIC16:
+            configAddress = 0x2007;  // PIC16 mid-range config at 0x2007
+            break;
+        case Architecture::PIC18:
+            configAddress = 0x300000;  // PIC18 config starts at 0x300000
+            break;
+        default:
+            configAddress = 0x2007;
+    }
+
+    // Create ConfigWord entry
+    ConfigWord config;
+    config.address = configAddress;
+    config.value = configValue;
+    config.sourceCode = sourceLine;
+    config.lineNumber = lineNumber;
+
+    configWords.push_back(config);
 }

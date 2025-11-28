@@ -127,7 +127,7 @@ int main(int argc, const char* argv[]) {
 
             try {
                 HexGenerator hexGen(options.architecture);
-                if (!hexGen.writeToFile(outputFile, code, assembler.getDataDefinitions())) {
+                if (!hexGen.writeToFile(outputFile, code, assembler.getDataDefinitions(), assembler.getConfigWords())) {
                     cli.printError(hexGen.getLastError());
                     return 1;
                 }
