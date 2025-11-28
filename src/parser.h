@@ -16,6 +16,24 @@
 struct DataDefinition;
 struct ConfigWord;
 
+// Assembly-time conditional block structure (different from preprocessor ConditionalBlock)
+struct AssemblyConditionalBlock {
+    enum Type {
+        IF_TYPE,
+        IFDEF_TYPE,
+        IFNDEF_TYPE,
+        ELSE_TYPE
+    };
+
+    Type type;
+    std::string condition;        // For IF: expression to evaluate
+    std::string symbol;           // For IFDEF/IFNDEF: symbol name
+    bool conditionMet;            // Was condition true?
+    bool anyBranchTaken;          // Has any branch been taken (for ELSE)?
+    bool isActive;                // Should we process lines in this block?
+    uint32_t startLine;           // Where block started
+};
+
 struct ParsedInstruction {
     InstructionType type;
     std::string mnemonic;
@@ -89,6 +107,10 @@ private:
     int localLabelCounter;
     static constexpr int MAX_MACRO_DEPTH = 100;
 
+    // Conditional block state (assembly-time IF/IFDEF/IFNDEF/ELSE/ENDIF)
+    std::vector<AssemblyConditionalBlock> conditionalStack;
+    int conditionalDepth;
+
     // Helper functions
     Token& current();
     const Token& current() const;
@@ -119,6 +141,18 @@ private:
     void handleLOCAL();
     std::vector<std::string> parseMacroArguments();
     std::vector<ParsedInstruction> expandMacro(const std::string& macroName, int callLine);
+
+    // Conditional directive handlers
+    void handleIF(const std::string& condition);
+    void handleIFDEF(const std::string& symbol);
+    void handleIFNDEF(const std::string& symbol);
+    void handleELSE();
+    void handleELIF(const std::string& condition);
+    void handleENDIF();
+    bool shouldProcessCurrentLine() const;
+
+    // Helper for conditional evaluation
+    std::map<std::string, uint32_t> buildSymbolMap() const;
 
     // Validation
     void validateOperands(ParsedInstruction& instr);

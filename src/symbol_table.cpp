@@ -59,6 +59,27 @@ uint16_t SymbolTable::getSymbol(const std::string& name) const {
     throw std::runtime_error("Undefined symbol: " + name);
 }
 
+std::map<std::string, uint32_t> SymbolTable::getAllSymbols() const {
+    std::map<std::string, uint32_t> result;
+
+    // Add all labels
+    for (const auto& [name, value] : labels) {
+        result[name] = value;
+    }
+
+    // Add all constants
+    for (const auto& [name, value] : constants) {
+        result[name] = value;
+    }
+
+    // Add all variables
+    for (const auto& [name, value] : variables) {
+        result[name] = value;
+    }
+
+    return result;
+}
+
 void SymbolTable::clear() {
     labels.clear();
     constants.clear();

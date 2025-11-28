@@ -1,5 +1,6 @@
 #include "parser.h"
 #include "assembler.h"
+#include "expression.h"
 #include <sstream>
 #include <algorithm>
 #include <cctype>
@@ -7,7 +8,7 @@
 Parser::Parser(const std::vector<Token>& tokens, Architecture arch)
     : tokens(tokens), currentPos(0), programCounter(0), currentArch(arch), defaultRadix(10),
       insideCBLOCK(false), cblockAddress(0), insideMacroDefinition(false),
-      macroExpansionDepth(0), localLabelCounter(0) {}
+      macroExpansionDepth(0), localLabelCounter(0), conditionalDepth(0) {}
 
 Token& Parser::current() {
     static Token eof{TokenType::END_OF_FILE, "", 0, 0};
@@ -621,6 +622,60 @@ void Parser::parseDirective(const Token& directive) {
         if (!insideMacroDefinition) {
             errorReporter.reportError(directive.line, directive.column, "EXITM outside of MACRO", "", "");
         }
+    } else if (dirName == "IF") {
+        // IF expression - evaluate at assembly time using current symbol table
+        advance();  // Move to expression
+        std::string condition = "";
+        // Collect all tokens on this line as the condition
+        uint32_t conditionLine = directive.line;
+        while (!check(TokenType::END_OF_FILE) && current().line == conditionLine) {
+            if (!condition.empty()) condition += " ";
+            condition += current().value;
+            advance();
+        }
+        handleIF(condition);
+        if (currentPos > 0) currentPos--;
+    } else if (dirName == "IFDEF") {
+        // IFDEF symbol
+        advance();  // Move to symbol
+        if (check(TokenType::IDENTIFIER)) {
+            std::string symbol = current().value;
+            handleIFDEF(symbol);
+            advance();
+        } else {
+            errorReporter.reportError(directive.line, directive.column, "IFDEF requires a symbol name", "", "");
+        }
+        if (currentPos > 0) currentPos--;
+    } else if (dirName == "IFNDEF") {
+        // IFNDEF symbol
+        advance();  // Move to symbol
+        if (check(TokenType::IDENTIFIER)) {
+            std::string symbol = current().value;
+            handleIFNDEF(symbol);
+            advance();
+        } else {
+            errorReporter.reportError(directive.line, directive.column, "IFNDEF requires a symbol name", "", "");
+        }
+        if (currentPos > 0) currentPos--;
+    } else if (dirName == "ELIF") {
+        // ELIF expression
+        advance();  // Move to expression
+        std::string condition = "";
+        // Collect all tokens on this line as the condition
+        uint32_t conditionLine = directive.line;
+        while (!check(TokenType::END_OF_FILE) && current().line == conditionLine) {
+            if (!condition.empty()) condition += " ";
+            condition += current().value;
+            advance();
+        }
+        handleELIF(condition);
+        if (currentPos > 0) currentPos--;
+    } else if (dirName == "ELSE") {
+        // ELSE - switch conditional block
+        handleELSE();
+    } else if (dirName == "ENDIF") {
+        // ENDIF - end conditional block
+        handleENDIF();
     }
 }
 
@@ -631,6 +686,26 @@ void Parser::firstPass() {
     programCounter = 0;
 
     while (!check(TokenType::END_OF_FILE)) {
+        // Check for conditional directives - ALWAYS process them even in inactive blocks
+        if (check(TokenType::DIRECTIVE)) {
+            std::string dirName = current().value;
+            std::transform(dirName.begin(), dirName.end(), dirName.begin(), ::toupper);
+
+            // Conditional directives are ALWAYS processed
+            if (dirName == "IF" || dirName == "IFDEF" || dirName == "IFNDEF" ||
+                dirName == "ELIF" || dirName == "ELSE" || dirName == "ENDIF") {
+                parseDirective(current());
+                advance();
+                continue;
+            }
+        }
+
+        // Skip processing if we're in an inactive conditional block
+        if (!shouldProcessCurrentLine()) {
+            advance();
+            continue;
+        }
+
         // Check for labels and EQU constants
         if (check(TokenType::IDENTIFIER)) {
             Token& identToken = current();
@@ -741,10 +816,35 @@ std::vector<ParsedInstruction> Parser::parse() {
     dataDefinitions.clear();
     generatedInstructions.clear();
 
+    // Reset conditional stack for second pass
+    conditionalStack.clear();
+    conditionalDepth = 0;
+    currentPos = 0;
+    programCounter = 0;
+
     // Second pass: generate code using complete symbol table
     std::vector<ParsedInstruction> instructions;
 
     while (!check(TokenType::END_OF_FILE)) {
+        // Check for conditional directives - ALWAYS process them even in inactive blocks
+        if (check(TokenType::DIRECTIVE)) {
+            std::string dirName = current().value;
+            std::transform(dirName.begin(), dirName.end(), dirName.begin(), ::toupper);
+
+            // Conditional directives are ALWAYS processed
+            if (dirName == "IF" || dirName == "IFDEF" || dirName == "IFNDEF" ||
+                dirName == "ELIF" || dirName == "ELSE" || dirName == "ENDIF") {
+                parseDirective(current());
+                advance();
+                continue;
+            }
+        }
+
+        // Skip processing if we're in an inactive conditional block
+        if (!shouldProcessCurrentLine()) {
+            advance();
+            continue;
+        }
         // Check for labels and EQU constants
         if (check(TokenType::IDENTIFIER)) {
             Token& identToken = current();
@@ -1311,4 +1411,181 @@ std::vector<ParsedInstruction> Parser::expandMacro(const std::string& macroName,
         macroExpansionDepth--;
         return {};
     }
+}
+
+// Assembly-time conditional directive handlers
+
+bool Parser::shouldProcessCurrentLine() const {
+    // If no conditional blocks are active, always process
+    if (conditionalStack.empty()) {
+        return true;
+    }
+    // Check if the current block is active
+    return conditionalStack.back().isActive;
+}
+
+void Parser::handleIF(const std::string& condition) {
+    AssemblyConditionalBlock block;
+    block.type = AssemblyConditionalBlock::IF_TYPE;
+    block.condition = condition;
+    block.startLine = current().line;
+
+    // Evaluate the condition using the current symbol table
+    try {
+        // Get symbol map for expression evaluation
+        auto symbolMap = buildSymbolMap();
+        ExpressionEvaluator evaluator(&symbolMap, programCounter);
+        uint32_t result = evaluator.evaluate(condition);
+        block.conditionMet = (result != 0);
+        block.anyBranchTaken = block.conditionMet;
+    } catch (const std::exception& e) {
+        errorReporter.reportError(current().line, current().column,
+            "IF condition evaluation error: " + std::string(e.what()), "", "");
+        block.conditionMet = false;
+        block.anyBranchTaken = false;
+    }
+
+    // Determine if we should process code in this block
+    if (conditionalStack.empty()) {
+        // No parent conditional block - process based on our condition
+        block.isActive = block.conditionMet;
+    } else {
+        // Parent conditional block - only process if parent is active AND our condition is met
+        block.isActive = conditionalStack.back().isActive && block.conditionMet;
+    }
+
+    conditionalStack.push_back(block);
+    conditionalDepth++;
+}
+
+void Parser::handleIFDEF(const std::string& symbol) {
+    AssemblyConditionalBlock block;
+    block.type = AssemblyConditionalBlock::IFDEF_TYPE;
+    block.symbol = symbol;
+    block.startLine = current().line;
+
+    // Check if symbol is defined (either constant, variable, or label)
+    block.conditionMet = symbolTable.hasSymbol(symbol);
+    block.anyBranchTaken = block.conditionMet;
+
+    // Determine if we should process code in this block
+    if (conditionalStack.empty()) {
+        block.isActive = block.conditionMet;
+    } else {
+        block.isActive = conditionalStack.back().isActive && block.conditionMet;
+    }
+
+    conditionalStack.push_back(block);
+    conditionalDepth++;
+}
+
+void Parser::handleIFNDEF(const std::string& symbol) {
+    AssemblyConditionalBlock block;
+    block.type = AssemblyConditionalBlock::IFNDEF_TYPE;
+    block.symbol = symbol;
+    block.startLine = current().line;
+
+    // Check if symbol is NOT defined
+    block.conditionMet = !symbolTable.hasSymbol(symbol);
+    block.anyBranchTaken = block.conditionMet;
+
+    // Determine if we should process code in this block
+    if (conditionalStack.empty()) {
+        block.isActive = block.conditionMet;
+    } else {
+        block.isActive = conditionalStack.back().isActive && block.conditionMet;
+    }
+
+    conditionalStack.push_back(block);
+    conditionalDepth++;
+}
+
+void Parser::handleELIF(const std::string& condition) {
+    if (conditionalStack.empty()) {
+        errorReporter.reportError(current().line, current().column,
+            "ELIF without IF", "", "");
+        return;
+    }
+
+    AssemblyConditionalBlock& block = conditionalStack.back();
+
+    // ELIF only works after IF (not after IFDEF/IFNDEF)
+    if (block.type != AssemblyConditionalBlock::IF_TYPE) {
+        errorReporter.reportError(current().line, current().column,
+            "ELIF can only follow IF, not IFDEF/IFNDEF", "", "");
+        return;
+    }
+
+    // If a previous branch was taken, deactivate
+    if (block.anyBranchTaken) {
+        block.isActive = false;
+        return;
+    }
+
+    // Try to evaluate the ELIF condition
+    try {
+        // Get symbol map for expression evaluation
+        auto symbolMap = buildSymbolMap();
+        ExpressionEvaluator evaluator(&symbolMap, programCounter);
+        uint32_t result = evaluator.evaluate(condition);
+        bool conditionMet = (result != 0);
+
+        block.condition = condition;
+        block.conditionMet = conditionMet;
+
+        // Determine if we should process this branch
+        if (conditionalStack.size() > 1) {
+            // Check parent block status
+            block.isActive = conditionalStack[conditionalStack.size() - 2].isActive && conditionMet;
+        } else {
+            block.isActive = conditionMet;
+        }
+
+        if (conditionMet) {
+            block.anyBranchTaken = true;
+        }
+    } catch (const std::exception& e) {
+        errorReporter.reportError(current().line, current().column,
+            "ELIF condition evaluation error: " + std::string(e.what()), "", "");
+        block.isActive = false;
+    }
+}
+
+void Parser::handleELSE() {
+    if (conditionalStack.empty()) {
+        errorReporter.reportError(current().line, current().column,
+            "ELSE without IF/IFDEF/IFNDEF", "", "");
+        return;
+    }
+
+    AssemblyConditionalBlock& block = conditionalStack.back();
+
+    // If a previous branch (IF or ELIF) was taken, deactivate ELSE
+    if (block.anyBranchTaken) {
+        block.isActive = false;
+    } else {
+        // ELSE is active if the previous condition was false and parent is active
+        if (conditionalStack.size() > 1) {
+            block.isActive = conditionalStack[conditionalStack.size() - 2].isActive;
+        } else {
+            block.isActive = true;
+        }
+        block.anyBranchTaken = true;
+    }
+}
+
+void Parser::handleENDIF() {
+    if (conditionalStack.empty()) {
+        errorReporter.reportError(current().line, current().column,
+            "ENDIF without IF/IFDEF/IFNDEF", "", "");
+        return;
+    }
+
+    conditionalStack.pop_back();
+    conditionalDepth--;
+}
+
+std::map<std::string, uint32_t> Parser::buildSymbolMap() const {
+    // Build a map of all symbols for expression evaluation
+    return symbolTable.getAllSymbols();
 }

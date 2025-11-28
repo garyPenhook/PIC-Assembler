@@ -36,6 +36,9 @@ public:
     // Get symbol value (works for labels, constants, and variables)
     uint16_t getSymbol(const std::string& name) const;
 
+    // Get all symbols as a map (for expression evaluation)
+    std::map<std::string, uint32_t> getAllSymbols() const;
+
     // Clear all symbols
     void clear();
 

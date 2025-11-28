@@ -68,6 +68,12 @@
 - [x] LOCAL - local labels within macros
 - [x] EXITM - exit from macro expansion
 
+### Conditional Assembly (Assembly-Time)
+- [x] IF / ELIF / ELSE / ENDIF - Expression-based conditionals
+- [x] IFDEF / IFNDEF / ENDIF - Symbol-based conditionals
+- [x] Full nesting support for conditional blocks
+- [x] Conditional expression evaluation with symbol resolution
+
 ### Banking/Paging Support
 - [ ] BANKSEL - automatic bank selection
 - [ ] PAGESEL - automatic page selection
@@ -202,25 +208,25 @@ Currently supporting approximately **25+ of 50+ MPASM directives** (~50%)
 - ✅ MACRO/ENDM with LOCAL labels
 - ✅ Expression evaluation (full arithmetic/logical operations)
 - ✅ All preprocessor directives (#define, #ifdef/#ifndef/#endif, #if/#elif/#else, #include, #undef, function-like macros, macro operators)
+- ✅ Assembly-time conditional directives (IF/IFDEF/IFNDEF/ELSE/ELIF/ENDIF with full nesting and expression evaluation)
 - ✅ Device pack manager utility for extracting and managing Microchip device packs
 
 **High Priority:**
-1. **Conditional assembly** - IF/IFDEF/IFNDEF/ELSE/ENDIF directives (assembly-time, different from preprocessor)
-2. **BANKSEL/PAGESEL** - Automatic banking (high value for users)
-3. **UDATA/CODE sections** - Proper section and memory management
-4. **#error/#warning directives** - Preprocessor error/warning messages
-5. **Device validation** - Check that used instructions/registers exist for selected device
+1. **BANKSEL/PAGESEL** - Automatic banking (high value for users)
+2. **UDATA/CODE sections** - Proper section and memory management
+3. **#error/#warning directives** - Preprocessor error/warning messages
+4. **Device validation** - Check that used instructions/registers exist for selected device
+5. **Multi-file project support** - GLOBAL/EXTERN directives for symbol export/import
 
 **Medium Priority:**
 6. **Listing directives** - TITLE, LIST/NOLIST, PAGE, MESSG
-7. **Multi-file projects** - GLOBAL/EXTERN for symbol export/import
-8. **Banking scenarios** - BSR register management
-9. **Error recovery** - Better developer experience with error recovery
+7. **Banking scenarios** - BSR register management
+8. **Error recovery** - Better developer experience with error recovery
 
 **Lower Priority:**
-10. **PIC18 extended instructions** - Verify all extended instruction encodings
-11. **Comprehensive testing** - Integration tests with real-world PIC programs
-12. **Documentation** - Examples, migration guide from MPASM, troubleshooting
+9. **PIC18 extended instructions** - Verify all extended instruction encodings
+10. **Comprehensive testing** - Integration tests with real-world PIC programs
+11. **Documentation** - Examples, migration guide from MPASM, troubleshooting
 
 ## 📝 Completion Summary
 
@@ -229,8 +235,10 @@ Currently supporting approximately **25+ of 50+ MPASM directives** (~50%)
 - ✅ **DT (Define Table)** - RETLW-based lookup tables supporting strings and numeric values
 - ✅ **MACRO/ENDM** - Full macro support with parameters, LOCAL labels, and EXITM
 - ✅ **Preprocessor Phase 1-5** - Complete text-level preprocessing (#define, #ifdef/#ifndef/#endif, #if/#elif/#else, #include with circular detection, function-like macros with # and ## operators)
+- ✅ **Assembly-Time Conditionals** - IF/IFDEF/IFNDEF/ELIF/ELSE/ENDIF with expression evaluation and full nesting support
 - ✅ **Device Pack Manager** - Python utility to scan, extract, and catalog Microchip device packs (1,748 .inc files extracted from 9 device packs covering 2,903 devices)
-- ✅ **Test Coverage** - Created comprehensive test files for all features
+- ✅ **Symbol Table Enhancement** - Added getAllSymbols() method for expression evaluation support
+- ✅ **Test Coverage** - Created comprehensive test files for all features (5 test files for conditionals)
 - ✅ **Documentation** - Updated TODO.md with detailed feature status
 
 ### Implementation Details:
@@ -245,8 +253,8 @@ Currently supporting approximately **25+ of 50+ MPASM directives** (~50%)
 
 ### Feature Gap Analysis:
 The main gaps preventing 100% MPASM compatibility are:
-1. **Assembly-time conditional assembly** - IF/IFDEF/IFNDEF/ELSE/ENDIF directives (different from preprocessor)
-2. **Section management** - UDATA, CODE, IDATA sections for proper memory layout
-3. **Banking/Paging helpers** - BANKSEL, PAGESEL directives for automatic register management
-4. **Multi-file linking** - GLOBAL/EXTERN for symbol export/import across object files
-5. **Device validation** - Verify selected device supports all used instructions/registers
+1. **Section management** - UDATA, CODE, IDATA sections for proper memory layout
+2. **Banking/Paging helpers** - BANKSEL, PAGESEL directives for automatic register management
+3. **Multi-file linking** - GLOBAL/EXTERN for symbol export/import across object files
+4. **Device validation** - Verify selected device supports all used instructions/registers
+5. **Preprocessor error/warning** - #error and #warning directives
