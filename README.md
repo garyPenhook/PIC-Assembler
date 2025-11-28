@@ -1294,7 +1294,11 @@ gnsasm program.asm -a pic18
 ```
 PIC-Assembler/
 ├── README.md                 # This file
-├── ARCHITECTURE.md           # Technical architecture documentation
+├── docs/                    # Documentation files
+│   ├── ARCHITECTURE.md      # Technical architecture
+│   ├── TUTORIAL.md          # Beginner's guide
+│   ├── PROGRAMMING.md       # Programming guide
+│   └── *.md                 # Other documentation
 ├── CMakeLists.txt           # Build configuration
 ├── main.cpp                 # Entry point
 ├── src/                     # Source code
@@ -1403,21 +1407,21 @@ Contributions are welcome! Please:
 
 For issues, questions, or suggestions:
 - Create an issue on GitHub
-- Check existing documentation in ARCHITECTURE.md
+- Check existing documentation in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Review example assembly files
 
 ## Documentation
 
 📚 **Complete Documentation Available:**
 
-- **[TUTORIAL.md](TUTORIAL.md)** - Complete beginner's guide to PIC assembly programming
+- **[TUTORIAL.md](docs/TUTORIAL.md)** - Complete beginner's guide to PIC assembly programming
   - Your first program (LED blink)
   - Understanding the code line-by-line
   - Assembling and programming workflow
   - Common patterns and examples
   - Troubleshooting guide
 
-- **[PROGRAMMING.md](PROGRAMMING.md)** - Programming PICs with ipecmd
+- **[PROGRAMMING.md](docs/PROGRAMMING.md)** - Programming PICs with ipecmd
   - Using Microchip's command-line programmer
   - Installation and setup
   - Makefile integration
@@ -1425,7 +1429,7 @@ For issues, questions, or suggestions:
   - Advanced features and troubleshooting
   - **ipecmd is the PIC equivalent of avrdude**
 
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Technical internals
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** - Technical internals
   - How the assembler works
   - Two-pass assembly process
   - Instruction encoding details
