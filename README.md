@@ -107,17 +107,45 @@ Use device include files for symbolic names:
 
 ### Supported Devices
 
-The assembler includes **1,748 device include files** covering **2,903 devices** across all Microchip families:
+The assembler itself supports **all PIC® microcontroller families** including:
 - **PIC12** baseline series (12-bit instructions)
 - **PIC16/PIC16F** mid-range and enhanced mid-range (14-bit instructions)
 - **PIC18/PIC18-Q40** high-performance (16-bit instructions)
 
-### Device Packs Already Included
+Device include files are available from Microchip for **2,903+ devices**. See "Getting Device Include Files" above for how to obtain them.
 
-Unlike MPASM, device include files are **already bundled** with the assembler. No need to:
-- Download device family packs (DFP)
-- Configure include file paths
-- Manage include file libraries
+### Getting Device Include Files
+
+Device include files (`.inc`) are **optional** for basic assembly. They provide symbolic register names but are not required.
+
+**Option 1: Use without device files (Simplest)**
+- Use numeric addresses directly (see Approach 1 above)
+- No additional setup needed
+- Fully portable and self-contained
+
+**Option 2: Add device files (MPASM-compatible)**
+
+Device include files are provided by Microchip and can be extracted from their official device family packs (DFP). To use them:
+
+1. **Download from Microchip:**
+   - Visit [Microchip Device Family Packs](https://packs.download.microchip.com/)
+   - Download the DFP for your device family (e.g., `pic16f1xxx_DFP`)
+
+2. **Extract the files:**
+   ```bash
+   # The .inc files are usually in: content/device_files/pic16f1xxx/
+   # Copy them to: ./device_includes/
+   mkdir -p device_includes
+   cp path/to/pic16f*.inc device_includes/
+   ```
+
+3. **Use in your assembly code:**
+   ```asm
+   #include <pic16f18076.inc>
+   ; Now you can use symbolic names like PORTA, STATUS, etc.
+   ```
+
+Microchip's device include files are copyrighted and should be obtained directly from Microchip's official sources. They are not included in this repository to comply with licensing requirements.
 
 ### Define Your Own Constants
 
@@ -138,13 +166,13 @@ MY_STATUS   EQU 0x03
 
 ### Finding Include File Names
 
-Device include files use the device model number in lowercase:
+Device include files use the device model number in lowercase with the `.inc` extension:
 - `pic16f18076.inc` for PIC16F18076
 - `pic18f14k50.inc` for PIC18F14K50
 - `pic16f628a.inc` for PIC16F628A
 - etc.
 
-Check the `device_includes/` directory or consult your device's datasheet for the exact filename.
+If you've downloaded device files from Microchip, place them in the `device_includes/` directory. The assembler will automatically find and use them. You can verify available files by checking the `device_includes/` folder after extraction.
 
 ## Supported Operating Systems
 
@@ -1350,7 +1378,19 @@ This assembler implements assembly language syntax and instruction sets that are
 
 ## License
 
-MIT License - See LICENSE file for details
+GnSasm is provided under the **MIT License** - See LICENSE file for details.
+
+### Third-Party Components
+
+**Device Include Files (`.inc` files)**
+
+Device include files are provided by **Microchip Technology** and are subject to Microchip's licensing terms. These files are:
+- Copyrighted by Microchip Technology Incorporated
+- Available for download from [Microchip Device Family Packs](https://packs.download.microchip.com/)
+- **Not included in this repository** to comply with licensing requirements
+- Users should obtain them directly from Microchip's official sources
+
+The assembler works perfectly without device include files by using numeric register addresses. Device files are strictly optional and provided only for users who want MPASM-compatible symbolic register names.
 
 ## Contributing
 
