@@ -1,4 +1,5 @@
 build/
+build_test/
 cmake-build-*/
 .idea/
 .vscode/
@@ -7,6 +8,7 @@ cmake-build-*/
 *.so
 *.dylib
 *.hex
+*.lst
 *.d
 *.swp
 *.swo
