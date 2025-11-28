@@ -878,6 +878,37 @@ std::string Preprocessor::resolveIncludePath(const std::string& includeFile,
         if (fs::exists(fullPath)) {
             return fullPath;
         }
+
+        // Try case-insensitive match for device_includes directory
+        if (path == "device_includes" || path.find("device_includes") != std::string::npos) {
+            try {
+                std::string searchDir = path;
+                if (searchDir.empty() || searchDir == ".") {
+                    searchDir = ".";
+                }
+
+                for (const auto& entry : fs::directory_iterator(searchDir)) {
+                    std::string entryPath = entry.path().string();
+                    std::replace(entryPath.begin(), entryPath.end(), '\\', '/');
+
+                    // Extract filename and compare case-insensitively
+                    std::string entryFilename = entry.path().filename().string();
+                    std::string includeFilename = includeFile;
+
+                    // Convert to lowercase for comparison
+                    std::string entryLower = entryFilename;
+                    std::string includeLower = includeFilename;
+                    std::transform(entryLower.begin(), entryLower.end(), entryLower.begin(), ::tolower);
+                    std::transform(includeLower.begin(), includeLower.end(), includeLower.begin(), ::tolower);
+
+                    if (entryLower == includeLower) {
+                        return entryPath;
+                    }
+                }
+            } catch (...) {
+                // Directory doesn't exist or can't be read, continue
+            }
+        }
     }
 
     return "";  // File not found

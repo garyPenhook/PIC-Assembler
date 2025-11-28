@@ -555,6 +555,11 @@ void Parser::parseDirective(const Token& directive) {
     std::string dirName = directive.value;
     std::transform(dirName.begin(), dirName.end(), dirName.begin(), ::toupper);
 
+    // Remove leading dot for directives like .NOLIST, .LIST
+    if (!dirName.empty() && dirName[0] == '.') {
+        dirName = dirName.substr(1);
+    }
+
     if (dirName == "ORG") {
         // ORG address
         // Current position is at ORG token, peek at next token
@@ -773,6 +778,24 @@ void Parser::parseDirective(const Token& directive) {
             advance();  // Skip size value
         } else {
             errorReporter.reportError(directive.line, directive.column, "RES requires a size value", "", "");
+        }
+        if (currentPos > 0) currentPos--;
+    } else if (dirName == "NOLIST") {
+        // NOLIST - disable listing output (recognized but no action needed)
+        // Listing is controlled by the -l/--listing command-line flag
+        // No position backup needed - main loop will advance past it
+    } else if (dirName == "LIST") {
+        // LIST - enable listing output (recognized but no action needed)
+        // Listing is controlled by the -l/--listing command-line flag
+        // No position backup needed - main loop will advance past it
+    } else if (dirName == "TITLE" || dirName == "SUBTITLE") {
+        // TITLE/SUBTITLE string - set listing title/subtitle (recognized but no action)
+        // These could be stored for listing file generation if needed
+        advance();  // Skip to title/subtitle text
+        // Skip all tokens on this line
+        uint32_t directiveLine = directive.line;
+        while (!check(TokenType::END_OF_FILE) && current().line == directiveLine) {
+            advance();
         }
         if (currentPos > 0) currentPos--;
     }

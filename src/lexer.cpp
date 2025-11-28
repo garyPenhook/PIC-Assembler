@@ -71,7 +71,9 @@ bool Lexer::isDirective(const std::string& str) const {
         "BANKSEL", "PAGESEL", "UDATA", "CODE", "RADIX",
         "CBLOCK", "ENDC", "DT", "MACRO", "ENDM", "LOCAL", "EXITM",
         // Assembly-time conditional directives (different from preprocessor #ifdef, etc.)
-        "IF", "IFDEF", "IFNDEF", "ELIF", "ELSE", "ENDIF"
+        "IF", "IFDEF", "IFNDEF", "ELIF", "ELSE", "ENDIF",
+        // Listing control directives (MPASM-compatible)
+        "NOLIST", "LIST", "TITLE", "SUBTITLE"
     };
     auto upper = str;
     std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
@@ -432,6 +434,27 @@ Token Lexer::nextToken() {
     }
     if (std::isdigit(c)) {
         return readNumber();
+    }
+
+    // Dot-prefixed directives (.NOLIST, .LIST, .TITLE, .SUBTITLE)
+    if (c == '.' && (std::isalpha(peekChar()) || peekChar() == '_')) {
+        std::string value;
+        value += currentChar();  // Add the dot
+        advance();
+
+        while (position < source.length() && (std::isalnum(currentChar()) || currentChar() == '_')) {
+            value += currentChar();
+            advance();
+        }
+
+        TokenType type = TokenType::IDENTIFIER;
+        // Remove the dot for directive check
+        std::string withoutDot = value.substr(1);
+        if (isDirective(withoutDot)) {
+            type = TokenType::DIRECTIVE;
+        }
+
+        return {type, value, tokenLine, tokenColumn};
     }
 
     // Identifiers and keywords
