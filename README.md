@@ -51,11 +51,26 @@ A modern, standards-compliant assembler for Microchip® PIC® microcontrollers w
 
 ## Device Register Names and Include Files
 
-GnSasm now supports **symbolic device register names** from Microchip device include files (`.inc` files), providing full compatibility with MPASM-style assembly code.
+GnSasm now supports **optional symbolic device register names** from Microchip device include files (`.inc` files), providing full compatibility with MPASM-style assembly code. However, **include files are not required** - you can use numeric addresses directly.
 
-### Loading Device Register Names
+### Two Approaches to PIC Assembly
 
-You can now use symbolic register names by including the appropriate device `.inc` file:
+**Approach 1: Direct Numeric Addresses (Recommended for Simplicity)**
+
+No include files needed - reference registers by their hex addresses:
+
+```asm
+        ORG 0x0000
+
+        MOVLW 0xFF
+        MOVWF 0x0C      ; 0x0C = PORTA address
+        BSF   0x03, 2   ; 0x03 = STATUS address, bit 2 = Z flag
+        INCF  0x20, 1   ; 0x20 = general purpose RAM
+```
+
+**Approach 2: Symbolic Register Names (MPASM-Compatible)**
+
+Use device include files for symbolic names:
 
 ```asm
 #include <pic16f18076.inc>
@@ -66,11 +81,26 @@ You can now use symbolic register names by including the appropriate device `.in
         MOVLW 0xFF
         MOVWF PORTA         ; PORTA = 0x0C (loaded from .inc)
         BSF   STATUS, Z     ; STATUS = 0x03 (loaded from .inc)
+        INCF  buffer, F     ; buffer = user-defined variable
 ```
 
-### How It Works
+### When to Use Include Files
 
-1. **Load register definitions:** Use `#include <device.inc>` to load device register definitions
+**Use direct addresses if:**
+- You want the simplest, most portable code
+- You don't want external dependencies
+- You know the register addresses from your datasheet
+- You prefer minimal overhead
+
+**Use include files if:**
+- You want MPASM-compatible symbolic names
+- Your code is long and readability matters
+- You want to avoid address typos
+- You're porting code from MPASM
+
+### How Include Files Work
+
+1. **Load register definitions:** `#include <device.inc>` loads register name definitions
 2. **Case-insensitive:** Register names work in any case: `PORTA = porta = PortA`
 3. **Protected:** Device registers cannot be redefined with EQU or SET directives
 4. **Priority:** Device registers have highest priority in symbol resolution
@@ -82,35 +112,36 @@ The assembler includes **1,748 device include files** covering **2,903 devices**
 - **PIC16/PIC16F** mid-range and enhanced mid-range (14-bit instructions)
 - **PIC18/PIC18-Q40** high-performance (16-bit instructions)
 
-### No Device Packs Required
+### Device Packs Already Included
 
 Unlike MPASM, device include files are **already bundled** with the assembler. No need to:
 - Download device family packs (DFP)
 - Configure include file paths
 - Manage include file libraries
 
-Just use `#include <device.inc>` and you're ready to go!
+### Define Your Own Constants
 
-### Optional: Define Your Own Constants
-
-You can also create your own symbol definitions using the `EQU` directive:
+Create your own symbol definitions using the `EQU` directive:
 
 ```asm
 ; Define your own constants
 MY_DELAY    EQU 10
 BUFFER_SIZE EQU 256
-CONFIG_VAL  SET 0x3F72
+MY_PORT     EQU 0x0C    ; Define custom names for addresses
+MY_STATUS   EQU 0x03
 
 ; Use them in code
     MOVLW MY_DELAY
-    MOVWF buffer, F
+    MOVWF MY_PORT
+    BSF   MY_STATUS, 2
 ```
 
 ### Finding Include File Names
 
-Device include files use the device model number:
+Device include files use the device model number in lowercase:
 - `pic16f18076.inc` for PIC16F18076
 - `pic18f14k50.inc` for PIC18F14K50
+- `pic16f628a.inc` for PIC16F628A
 - etc.
 
 Check the `device_includes/` directory or consult your device's datasheet for the exact filename.
