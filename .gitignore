@@ -13,3 +13,16 @@ cmake-build-*/
 *~
 .DS_Store
 *.zip
+
+# Device pack files (not needed by assembler)
+*.atpack
+*.pdsc
+*.sha1
+package.content
+device_memory_specifications.csv
+*_DFP*/
+*_DFP.*/
+edc/
+hwtools/
+scripts/
+xc8/
