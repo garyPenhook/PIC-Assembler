@@ -72,6 +72,7 @@ private:
     Architecture currentArch;
     std::vector<DataDefinition> dataDefinitions;
     std::vector<ConfigWord> configWords;
+    int defaultRadix;  // Default number base (DEC=10, HEX=16, OCT=8)
 
     // Helper functions
     Token& current();
@@ -90,6 +91,8 @@ private:
     void parseDirective(const Token& directive);
     void handleORG(const std::string& arg);
     void handleEQU(const std::string& label, const std::string& value);
+    void handleSET(const std::string& label, const std::string& value);
+    void handleRADIX(const std::string& radixType);
     void handleBANKSEL(const std::string& label, std::vector<ParsedInstruction>& instructions);
     void handlePAGESEL(const std::string& label, std::vector<ParsedInstruction>& instructions);
     void handleDataDirective(const std::string& directiveName);

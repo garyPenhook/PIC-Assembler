@@ -10,6 +10,7 @@ enum class TokenType {
     IDENTIFIER,
     DECIMAL_NUMBER,
     HEX_NUMBER,
+    OCTAL_NUMBER,
     BINARY_NUMBER,
     STRING,
 
@@ -71,11 +72,13 @@ private:
     Token readIdentifierOrMnemonic();
     Token readNumber();
     Token readHexNumber();
+    Token readOctalNumber();
     Token readBinaryNumber();
     Token readString();
 
     bool isMnemonic(const std::string& str) const;
     bool isDirective(const std::string& str) const;
     bool isHexDigit(char c) const;
+    bool isOctalDigit(char c) const;
     bool isBinaryDigit(char c) const;
 };

@@ -5,7 +5,7 @@
 #include <cctype>
 
 Parser::Parser(const std::vector<Token>& tokens, Architecture arch)
-    : tokens(tokens), currentPos(0), programCounter(0), currentArch(arch) {}
+    : tokens(tokens), currentPos(0), programCounter(0), currentArch(arch), defaultRadix(10) {}
 
 Token& Parser::current() {
     static Token eof{TokenType::END_OF_FILE, "", 0, 0};
@@ -77,10 +77,41 @@ uint16_t Parser::parseNumber(const std::string& str) {
         trimmed.erase(0, trimmed.find_first_not_of(" \t"));
         trimmed.erase(trimmed.find_last_not_of(" \t") + 1);
 
+        // Check if it's a symbol reference first
+        if (symbolTable.hasSymbol(trimmed)) {
+            return symbolTable.getSymbol(trimmed);
+        }
+
         try {
+            // Check for MPASM-style quoted numbers: D'255', H'FF', O'377', B'11111111'
+            if (trimmed.length() >= 4 && trimmed[1] == '\'' && trimmed.back() == '\'') {
+                char prefix = std::toupper(trimmed[0]);
+                std::string numPart = trimmed.substr(2, trimmed.length() - 3);  // Extract between quotes
+
+                if (prefix == 'D') {
+                    return static_cast<uint16_t>(std::stoi(numPart, nullptr, 10));
+                } else if (prefix == 'H') {
+                    return static_cast<uint16_t>(std::stoi(numPart, nullptr, 16));
+                } else if (prefix == 'O') {
+                    return static_cast<uint16_t>(std::stoi(numPart, nullptr, 8));
+                } else if (prefix == 'B') {
+                    return static_cast<uint16_t>(std::stoi(numPart, nullptr, 2));
+                }
+            }
+
             // Check for hex (0x prefix)
             if (trimmed.size() >= 3 && trimmed[0] == '0' && (trimmed[1] == 'x' || trimmed[1] == 'X')) {
                 return static_cast<uint16_t>(std::stoi(trimmed.substr(2), nullptr, 16));
+            }
+
+            // Check for octal (0o prefix)
+            if (trimmed.size() >= 3 && trimmed[0] == '0' && (trimmed[1] == 'o' || trimmed[1] == 'O')) {
+                return static_cast<uint16_t>(std::stoi(trimmed.substr(2), nullptr, 8));
+            }
+
+            // Check for binary (0b prefix)
+            if (trimmed.size() >= 3 && trimmed[0] == '0' && (trimmed[1] == 'b' || trimmed[1] == 'B')) {
+                return static_cast<uint16_t>(std::stoi(trimmed.substr(2), nullptr, 2));
             }
 
             // Check for hex (H suffix - MPASM style)
@@ -89,9 +120,10 @@ uint16_t Parser::parseNumber(const std::string& str) {
                 return static_cast<uint16_t>(std::stoi(hexStr, nullptr, 16));
             }
 
-            // Check for binary (0b prefix)
-            if (trimmed.size() >= 3 && trimmed[0] == '0' && (trimmed[1] == 'b' || trimmed[1] == 'B')) {
-                return static_cast<uint16_t>(std::stoi(trimmed.substr(2), nullptr, 2));
+            // Check for octal (O suffix - MPASM style)
+            if (trimmed.size() >= 2 && (trimmed.back() == 'o' || trimmed.back() == 'O')) {
+                std::string octStr = trimmed.substr(0, trimmed.length() - 1);
+                return static_cast<uint16_t>(std::stoi(octStr, nullptr, 8));
             }
 
             // Check for binary (B suffix - MPASM style)
@@ -100,8 +132,8 @@ uint16_t Parser::parseNumber(const std::string& str) {
                 return static_cast<uint16_t>(std::stoi(binStr, nullptr, 2));
             }
 
-            // Decimal
-            return static_cast<uint16_t>(std::stoi(trimmed));
+            // Bare number - use default radix
+            return static_cast<uint16_t>(std::stoi(trimmed, nullptr, defaultRadix));
         } catch (const std::invalid_argument&) {
             throw InvalidNumberFormatException(str, "invalid number format");
         } catch (const std::out_of_range&) {
@@ -349,8 +381,8 @@ ParsedInstruction Parser::parseInstruction(const Token& mnemonic) {
 
     // Skip optional operands if instruction has none
     if (check(TokenType::COMMA) || check(TokenType::DECIMAL_NUMBER) ||
-        check(TokenType::HEX_NUMBER) || check(TokenType::BINARY_NUMBER) ||
-        check(TokenType::IDENTIFIER)) {
+        check(TokenType::HEX_NUMBER) || check(TokenType::OCTAL_NUMBER) ||
+        check(TokenType::BINARY_NUMBER) || check(TokenType::IDENTIFIER)) {
 
         // Collect operand tokens
         std::string operandStr;
@@ -387,8 +419,69 @@ void Parser::handleORG(const std::string& arg) {
 }
 
 void Parser::handleEQU(const std::string& label, const std::string& value) {
-    uint16_t val = parseNumber(value);
+    uint16_t val;
+
+    // Check if value is a symbol reference
+    if (symbolTable.hasSymbol(value)) {
+        // Reference to another symbol
+        val = symbolTable.getSymbol(value);
+    } else {
+        // Direct numeric value
+        try {
+            val = parseNumber(value);
+        } catch (...) {
+            // If parsing fails and it's not a symbol, default to 0 and report error
+            errorReporter.reportError(current().line, current().column,
+                "Invalid value for EQU: '" + value + "'",
+                "Use a numeric value or a previously defined symbol", "");
+            val = 0;
+        }
+    }
+
     symbolTable.addConstant(label, val);
+}
+
+void Parser::handleSET(const std::string& label, const std::string& value) {
+    uint16_t val;
+
+    // Check if value is a symbol reference
+    if (symbolTable.hasSymbol(value)) {
+        // Reference to another symbol
+        val = symbolTable.getSymbol(value);
+    } else {
+        // Direct numeric value
+        try {
+            val = parseNumber(value);
+        } catch (...) {
+            // If parsing fails and it's not a symbol, default to 0 and report error
+            errorReporter.reportError(current().line, current().column,
+                "Invalid value for SET: '" + value + "'",
+                "Use a numeric value or a previously defined symbol", "");
+            val = 0;
+        }
+    }
+
+    // SET allows reassignment - use addVariable which allows overwriting
+    symbolTable.addVariable(label, val);
+}
+
+void Parser::handleRADIX(const std::string& radixType) {
+    std::string radix = radixType;
+    std::transform(radix.begin(), radix.end(), radix.begin(), ::toupper);
+
+    if (radix == "DEC" || radix == "DECIMAL") {
+        defaultRadix = 10;
+    } else if (radix == "HEX" || radix == "HEXADECIMAL") {
+        defaultRadix = 16;
+    } else if (radix == "OCT" || radix == "OCTAL") {
+        defaultRadix = 8;
+    } else if (radix == "BIN" || radix == "BINARY") {
+        defaultRadix = 2;
+    } else {
+        errorReporter.reportError(current().line, current().column,
+            "Invalid RADIX value: '" + radixType + "'",
+            "Use DEC, HEX, OCT, or BIN", "");
+    }
 }
 
 void Parser::handleDataDirective(const std::string& directiveName) {
@@ -405,7 +498,8 @@ void Parser::handleDataDirective(const std::string& directiveName) {
     while (!check(TokenType::END_OF_FILE) && !check(TokenType::MNEMONIC) &&
            !check(TokenType::DIRECTIVE) && !check(TokenType::IDENTIFIER)) {
 
-        if (check(TokenType::DECIMAL_NUMBER) || check(TokenType::HEX_NUMBER)) {
+        if (check(TokenType::DECIMAL_NUMBER) || check(TokenType::HEX_NUMBER) ||
+            check(TokenType::OCTAL_NUMBER) || check(TokenType::BINARY_NUMBER)) {
             uint16_t value = parseNumber(current().value);
             // For DB, store as single byte; for DW/DA, store as two bytes (little-endian)
             if (directiveName == "DB") {
@@ -441,7 +535,8 @@ void Parser::parseDirective(const Token& directive) {
         // ORG address
         // Current position is at ORG token, peek at next token
         advance();  // Move to the address value
-        if (check(TokenType::DECIMAL_NUMBER) || check(TokenType::HEX_NUMBER)) {
+        if (check(TokenType::DECIMAL_NUMBER) || check(TokenType::HEX_NUMBER) ||
+            check(TokenType::OCTAL_NUMBER) || check(TokenType::BINARY_NUMBER)) {
             handleORG(current().value);
             advance();  // Move past the address value
             // Now currentPos points to the token after the address
@@ -468,6 +563,15 @@ void Parser::parseDirective(const Token& directive) {
         handleConfigDirective();
         // Back up one position
         if (currentPos > 0) currentPos--;
+    } else if (dirName == "RADIX") {
+        // RADIX directive - set default number base
+        advance();  // Move to radix type
+        if (check(TokenType::IDENTIFIER)) {
+            handleRADIX(current().value);
+            advance();  // Skip radix type
+        }
+        // Back up one position
+        if (currentPos > 0) currentPos--;
     }
 }
 
@@ -478,7 +582,7 @@ void Parser::firstPass() {
     programCounter = 0;
 
     while (!check(TokenType::END_OF_FILE)) {
-        // Check for labels
+        // Check for labels and EQU constants
         if (check(TokenType::IDENTIFIER)) {
             Token& identToken = current();
             if (peek().type == TokenType::COLON) {
@@ -488,6 +592,43 @@ void Parser::firstPass() {
                 advance();  // Skip identifier
                 advance();  // Skip colon
                 continue;
+            } else if (peek().type == TokenType::DIRECTIVE) {
+                // Check if it's an EQU directive
+                Token& directiveToken = peek();
+                std::string dirName = directiveToken.value;
+                std::transform(dirName.begin(), dirName.end(), dirName.begin(), ::toupper);
+
+                if (dirName == "EQU") {
+                    // Handle EQU: LABEL EQU value
+                    std::string label = identToken.value;
+                    advance();  // Skip identifier
+                    advance();  // Skip EQU
+
+                    // Get the value (next token should be a number or identifier)
+                    if (check(TokenType::DECIMAL_NUMBER) || check(TokenType::HEX_NUMBER) ||
+                        check(TokenType::OCTAL_NUMBER) || check(TokenType::BINARY_NUMBER) ||
+                        check(TokenType::IDENTIFIER)) {
+                        std::string value = current().value;
+                        handleEQU(label, value);
+                        advance();  // Skip value
+                    }
+                    continue;
+                } else if (dirName == "SET") {
+                    // Handle SET: LABEL SET value
+                    std::string label = identToken.value;
+                    advance();  // Skip identifier
+                    advance();  // Skip SET
+
+                    // Get the value (next token should be a number or identifier)
+                    if (check(TokenType::DECIMAL_NUMBER) || check(TokenType::HEX_NUMBER) ||
+                        check(TokenType::OCTAL_NUMBER) || check(TokenType::BINARY_NUMBER) ||
+                        check(TokenType::IDENTIFIER)) {
+                        std::string value = current().value;
+                        handleSET(label, value);
+                        advance();  // Skip value
+                    }
+                    continue;
+                }
             }
         }
 
@@ -526,7 +667,7 @@ std::vector<ParsedInstruction> Parser::parse() {
     std::vector<ParsedInstruction> instructions;
 
     while (!check(TokenType::END_OF_FILE)) {
-        // Check for labels
+        // Check for labels and EQU constants
         if (check(TokenType::IDENTIFIER)) {
             Token& identToken = current();
             if (peek().type == TokenType::COLON) {
@@ -536,6 +677,37 @@ std::vector<ParsedInstruction> Parser::parse() {
                 advance();  // Skip colon
                 symbolTable.addLabel(label, programCounter);
                 continue;
+            } else if (peek().type == TokenType::DIRECTIVE) {
+                // Check if it's an EQU directive
+                Token& directiveToken = peek();
+                std::string dirName = directiveToken.value;
+                std::transform(dirName.begin(), dirName.end(), dirName.begin(), ::toupper);
+
+                if (dirName == "EQU") {
+                    // Skip EQU in second pass (already processed in first pass)
+                    advance();  // Skip identifier
+                    advance();  // Skip EQU
+
+                    // Skip the value
+                    if (check(TokenType::DECIMAL_NUMBER) || check(TokenType::HEX_NUMBER) ||
+                        check(TokenType::OCTAL_NUMBER) || check(TokenType::BINARY_NUMBER) ||
+                        check(TokenType::IDENTIFIER)) {
+                        advance();  // Skip value
+                    }
+                    continue;
+                } else if (dirName == "SET") {
+                    // Skip SET in second pass (already processed in first pass)
+                    advance();  // Skip identifier
+                    advance();  // Skip SET
+
+                    // Skip the value
+                    if (check(TokenType::DECIMAL_NUMBER) || check(TokenType::HEX_NUMBER) ||
+                        check(TokenType::OCTAL_NUMBER) || check(TokenType::BINARY_NUMBER) ||
+                        check(TokenType::IDENTIFIER)) {
+                        advance();  // Skip value
+                    }
+                    continue;
+                }
             }
         }
 
@@ -625,7 +797,8 @@ void Parser::handleConfigDirective() {
            !check(TokenType::MNEMONIC) &&
            !check(TokenType::DIRECTIVE)) {
 
-        if (check(TokenType::HEX_NUMBER) || check(TokenType::DECIMAL_NUMBER) || check(TokenType::BINARY_NUMBER)) {
+        if (check(TokenType::HEX_NUMBER) || check(TokenType::DECIMAL_NUMBER) ||
+            check(TokenType::OCTAL_NUMBER) || check(TokenType::BINARY_NUMBER)) {
             // Direct numeric value
             uint16_t value = parseNumber(current().value);
             if (firstOperand) {
@@ -668,7 +841,8 @@ void Parser::handleConfigDirective() {
             sourceLine += " |";
             advance();
             // Next value will be ORed
-            if (check(TokenType::HEX_NUMBER) || check(TokenType::DECIMAL_NUMBER)) {
+            if (check(TokenType::HEX_NUMBER) || check(TokenType::DECIMAL_NUMBER) ||
+                check(TokenType::OCTAL_NUMBER) || check(TokenType::BINARY_NUMBER)) {
                 uint16_t value = parseNumber(current().value);
                 configValue |= value;
                 sourceLine += " " + current().value;

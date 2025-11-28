@@ -654,11 +654,101 @@ loop:           ; Another label
 
 #### Directives
 ```asm
-ORG 0x0000      ; Set program origin
-EQU CONST=0x20  ; Define constant
-__CONFIG 0x3F72 ; Set configuration bits
-END             ; End of program
+        ORG 0x0000          ; Set program origin
+PORTA   EQU 0x05            ; Define constant (cannot change)
+counter SET 0               ; Define variable (can reassign)
+        RADIX HEX           ; Set default number base to hex
+        __CONFIG 0x3F72     ; Set configuration bits
+        DB 0x01, 0x02       ; Define bytes
+        DW 0x1234           ; Define word
+        END                 ; End of program
 ```
+
+**Define Constants (`EQU`):**
+
+The `EQU` directive assigns a constant value to a symbol, making your code more readable and maintainable.
+
+```asm
+; Define register addresses
+PORTA       EQU 0x05        ; Port A data register
+STATUS      EQU 0x03        ; Status register
+
+; Define bit positions
+Z_FLAG      EQU 2           ; Zero flag bit position
+
+; Define constant values
+LED_ON      EQU 0xFF
+LED_OFF     EQU 0x00
+
+; Symbol references
+OUTPUT_PORT EQU PORTA       ; Alias to another symbol
+
+; Use in your code
+        MOVLW LED_ON
+        MOVWF PORTA         ; Uses the defined constant
+        BSF   STATUS, Z_FLAG
+```
+
+**Benefits of EQU:**
+- Makes code self-documenting (`MOVWF PORTA` vs `MOVWF 0x05`)
+- Change hardware mappings in one place
+- Prevents typos in numeric addresses
+- See `.github/copilot-examples/using-equ-directive.asm` for comprehensive examples
+
+**Define Variables (`SET`):**
+
+The `SET` directive is like `EQU` but allows reassignment (XC8/MPASM compatibility):
+
+```asm
+; SET allows reassignment (useful for counters, offsets)
+counter SET 0           ; Initialize
+counter SET 1           ; Reassign to 1
+counter SET 2           ; Reassign to 2
+
+offset SET 0x100
+offset SET 0x200        ; Can change value
+
+; EQU does NOT allow reassignment
+CONST EQU 0x10          ; Locked value
+; CONST EQU 0x20        ; ERROR: cannot reassign EQU
+```
+
+**Key Differences:**
+- `EQU` = Constant (cannot change) - like `#define` in C
+- `SET` = Variable (can reassign) - useful for computed values
+
+**Change Default Number Base (`RADIX`):**
+
+The `RADIX` directive changes how bare numbers (without prefixes) are interpreted:
+
+```asm
+; Default is RADIX DEC (decimal)
+        MOVLW 255       ; Decimal 255
+
+; Switch to hexadecimal
+        RADIX HEX
+        MOVLW FF        ; Now interpreted as hex FF (255 decimal)
+        MOVLW AB        ; Hex AB (171 decimal)
+
+; Switch to octal
+        RADIX OCT
+        MOVLW 377       ; Octal 377 (255 decimal)
+
+; Switch to binary
+        RADIX BIN
+        MOVLW 11111111  ; Binary (255 decimal)
+
+; Prefixed numbers always work regardless of RADIX
+        RADIX HEX
+        MOVLW 0xFF      ; Explicit prefix still works
+        MOVLW 255       ; Bare number in HEX = 0x255 (597 decimal)
+```
+
+**Supported RADIX values:**
+- `DEC` or `DECIMAL` - Base 10 (default)
+- `HEX` or `HEXADECIMAL` - Base 16
+- `OCT` or `OCTAL` - Base 8
+- `BIN` or `BINARY` - Base 2
 
 **Configuration Bits (`__CONFIG` / `CONFIG`):**
 
@@ -689,11 +779,54 @@ __CONFIG _FOSC_INTRC & _WDTE_OFF & _PWRTE_ON & _MCLRE_OFF
 - See `.github/copilot-examples/pic18-config-bits.asm` for common PIC18 CONFIG definitions
 
 #### Number Formats
+
+**Decimal:**
 ```asm
-MOVLW 255       ; Decimal
-MOVLW 0xFF      ; Hexadecimal (C-style)
-MOVLW 0xAB      ; Hex with uppercase
-MOVLW 0b11110000; Binary
+MOVLW 255       ; Decimal number
+COUNT EQU 100   ; Decimal constant
+```
+
+**Hexadecimal (3 styles):**
+```asm
+MOVLW 0xFF      ; 0x prefix (C-style)
+MOVLW FFh       ; h suffix (MPASM-style)
+MOVLW H'FF'     ; H'...' quoted (MPASM-style)
+```
+
+**Octal (3 styles):**
+```asm
+MOVLW 0o377     ; 0o prefix (modern style)
+MOVLW 377o      ; o suffix (MPASM-style)
+MOVLW O'377'    ; O'...' quoted (MPASM-style)
+```
+
+**Binary (3 styles):**
+```asm
+MOVLW 0b11110000    ; 0b prefix (C-style)
+MOVLW 11111111b     ; b suffix (MPASM-style)
+MOVLW B'11111111'   ; B'...' quoted (MPASM-style)
+```
+
+**All formats that equal 255:**
+```asm
+        ; Decimal
+        MOVLW 255           ; Plain decimal
+        MOVLW D'255'        ; D'...' quoted (MPASM)
+
+        ; Hexadecimal
+        MOVLW 0xFF          ; 0x prefix
+        MOVLW FFh           ; h suffix
+        MOVLW H'FF'         ; H'...' quoted
+
+        ; Octal
+        MOVLW 0o377         ; 0o prefix
+        MOVLW 377o          ; o suffix
+        MOVLW O'377'        ; O'...' quoted
+
+        ; Binary
+        MOVLW 0b11111111    ; 0b prefix
+        MOVLW 11111111b     ; b suffix
+        MOVLW B'11111111'   ; B'...' quoted
 ```
 
 ### PIC®16 Example Program

@@ -64,9 +64,9 @@ bool Lexer::isMnemonic(const std::string& str) const {
 
 bool Lexer::isDirective(const std::string& str) const {
     static const std::vector<std::string> directives = {
-        "ORG", "END", "EQU", "INCLUDE", "DEFINE", "IFDEF", "ENDIF",
+        "ORG", "END", "EQU", "SET", "INCLUDE", "DEFINE", "IFDEF", "ENDIF",
         "DB", "DW", "DA", "DATA", "PROCESSOR", "__CONFIG", "CONFIG",
-        "BANKSEL", "PAGESEL", "UDATA", "CODE"
+        "BANKSEL", "PAGESEL", "UDATA", "CODE", "RADIX"
     };
     auto upper = str;
     std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
@@ -75,6 +75,10 @@ bool Lexer::isDirective(const std::string& str) const {
 
 bool Lexer::isHexDigit(char c) const {
     return std::isdigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+}
+
+bool Lexer::isOctalDigit(char c) const {
+    return c >= '0' && c <= '7';
 }
 
 bool Lexer::isBinaryDigit(char c) const {
@@ -86,9 +90,94 @@ Token Lexer::readIdentifierOrMnemonic() {
     uint32_t startColumn = column;
     std::string value;
 
+    // Check for MPASM-style quoted numbers: D'255', H'FF', O'377', B'11111111'
+    if (position < source.length() && std::isalpha(currentChar())) {
+        char prefix = std::toupper(currentChar());
+        if ((prefix == 'D' || prefix == 'H' || prefix == 'O' || prefix == 'B') &&
+            position + 1 < source.length() && peekChar() == '\'') {
+            // This looks like a quoted number
+            value += currentChar();  // Add prefix (D/H/O/B)
+            advance();
+            value += currentChar();  // Add opening quote
+            advance();
+
+            std::string numPart;
+            while (position < source.length() && currentChar() != '\'') {
+                numPart += currentChar();
+                value += currentChar();
+                advance();
+            }
+
+            if (position < source.length() && currentChar() == '\'') {
+                value += currentChar();  // Add closing quote
+                advance();
+
+                // Determine type based on prefix
+                if (prefix == 'D') {
+                    return {TokenType::DECIMAL_NUMBER, value, startLine, startColumn};
+                } else if (prefix == 'H') {
+                    return {TokenType::HEX_NUMBER, value, startLine, startColumn};
+                } else if (prefix == 'O') {
+                    return {TokenType::OCTAL_NUMBER, value, startLine, startColumn};
+                } else if (prefix == 'B') {
+                    return {TokenType::BINARY_NUMBER, value, startLine, startColumn};
+                }
+            }
+            // If we didn't find closing quote, treat as identifier (fall through)
+        }
+    }
+
     while (position < source.length() && (std::isalnum(currentChar()) || currentChar() == '_')) {
         value += currentChar();
         advance();
+    }
+
+    // Check if this is a number with suffix (h/o/b)
+    if (value.length() >= 2) {
+        char suffix = std::tolower(value.back());
+        std::string numPart = value.substr(0, value.length() - 1);
+
+        // Check for hex suffix (h or H)
+        if (suffix == 'h') {
+            bool allHex = true;
+            for (char c : numPart) {
+                if (!isHexDigit(c)) {
+                    allHex = false;
+                    break;
+                }
+            }
+            if (allHex && !numPart.empty()) {
+                return {TokenType::HEX_NUMBER, value, startLine, startColumn};
+            }
+        }
+
+        // Check for octal suffix (o or O)
+        if (suffix == 'o') {
+            bool allOctal = true;
+            for (char c : numPart) {
+                if (!isOctalDigit(c)) {
+                    allOctal = false;
+                    break;
+                }
+            }
+            if (allOctal && !numPart.empty()) {
+                return {TokenType::OCTAL_NUMBER, value, startLine, startColumn};
+            }
+        }
+
+        // Check for binary suffix (b or B)
+        if (suffix == 'b') {
+            bool allBinary = true;
+            for (char c : numPart) {
+                if (!isBinaryDigit(c)) {
+                    allBinary = false;
+                    break;
+                }
+            }
+            if (allBinary && !numPart.empty()) {
+                return {TokenType::BINARY_NUMBER, value, startLine, startColumn};
+            }
+        }
     }
 
     TokenType type = TokenType::IDENTIFIER;
@@ -109,6 +198,59 @@ Token Lexer::readNumber() {
     while (position < source.length() && std::isdigit(currentChar())) {
         value += currentChar();
         advance();
+    }
+
+    // Check for suffix-style notation (h/o/b)
+    if (position < source.length()) {
+        char nextChar = std::tolower(currentChar());
+
+        // Check for hex suffix (h)
+        if (nextChar == 'h') {
+            bool allHex = true;
+            for (char c : value) {
+                if (!isHexDigit(c)) {
+                    allHex = false;
+                    break;
+                }
+            }
+            if (allHex) {
+                value += currentChar();
+                advance();
+                return {TokenType::HEX_NUMBER, value, startLine, startColumn};
+            }
+        }
+
+        // Check for octal suffix (o)
+        if (nextChar == 'o') {
+            bool allOctal = true;
+            for (char c : value) {
+                if (!isOctalDigit(c)) {
+                    allOctal = false;
+                    break;
+                }
+            }
+            if (allOctal) {
+                value += currentChar();
+                advance();
+                return {TokenType::OCTAL_NUMBER, value, startLine, startColumn};
+            }
+        }
+
+        // Check for binary suffix (b)
+        if (nextChar == 'b') {
+            bool allBinary = true;
+            for (char c : value) {
+                if (!isBinaryDigit(c)) {
+                    allBinary = false;
+                    break;
+                }
+            }
+            if (allBinary) {
+                value += currentChar();
+                advance();
+                return {TokenType::BINARY_NUMBER, value, startLine, startColumn};
+            }
+        }
     }
 
     return {TokenType::DECIMAL_NUMBER, value, startLine, startColumn};
@@ -137,6 +279,31 @@ Token Lexer::readHexNumber() {
     }
 
     return {TokenType::HEX_NUMBER, value, startLine, startColumn};
+}
+
+Token Lexer::readOctalNumber() {
+    uint32_t startLine = line;
+    uint32_t startColumn = column;
+    std::string value;
+    value += currentChar();  // Add '0'
+    advance();
+
+    if (currentChar() == 'o' || currentChar() == 'O') {
+        value += currentChar();  // Add 'o' or 'O'
+        advance();
+    }
+
+    // Ensure at least one octal digit after 0o
+    if (!isOctalDigit(currentChar())) {
+        throw InvalidNumberFormatException(value, "expected octal digit (0-7) after '" + value + "'");
+    }
+
+    while (position < source.length() && isOctalDigit(currentChar())) {
+        value += currentChar();
+        advance();
+    }
+
+    return {TokenType::OCTAL_NUMBER, value, startLine, startColumn};
 }
 
 Token Lexer::readBinaryNumber() {
@@ -251,6 +418,9 @@ Token Lexer::nextToken() {
     // Numbers
     if (c == '0' && (peekChar() == 'x' || peekChar() == 'X')) {
         return readHexNumber();
+    }
+    if (c == '0' && (peekChar() == 'o' || peekChar() == 'O')) {
+        return readOctalNumber();
     }
     if (c == '0' && (peekChar() == 'b' || peekChar() == 'B')) {
         return readBinaryNumber();

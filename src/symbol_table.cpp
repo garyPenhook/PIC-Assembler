@@ -9,6 +9,10 @@ void SymbolTable::addConstant(const std::string& name, uint16_t value) {
     constants[name] = value;
 }
 
+void SymbolTable::addVariable(const std::string& name, uint16_t value) {
+    variables[name] = value;
+}
+
 uint16_t SymbolTable::getLabel(const std::string& label) const {
     auto it = labels.find(label);
     if (it == labels.end()) {
@@ -33,8 +37,12 @@ bool SymbolTable::hasConstant(const std::string& name) const {
     return constants.find(name) != constants.end();
 }
 
+bool SymbolTable::hasVariable(const std::string& name) const {
+    return variables.find(name) != variables.end();
+}
+
 bool SymbolTable::hasSymbol(const std::string& name) const {
-    return hasLabel(name) || hasConstant(name);
+    return hasLabel(name) || hasConstant(name) || hasVariable(name);
 }
 
 uint16_t SymbolTable::getSymbol(const std::string& name) const {
@@ -44,10 +52,15 @@ uint16_t SymbolTable::getSymbol(const std::string& name) const {
     if (hasConstant(name)) {
         return getConstant(name);
     }
+    if (hasVariable(name)) {
+        auto it = variables.find(name);
+        return it->second;
+    }
     throw std::runtime_error("Undefined symbol: " + name);
 }
 
 void SymbolTable::clear() {
     labels.clear();
     constants.clear();
+    variables.clear();
 }
