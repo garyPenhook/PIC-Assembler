@@ -1,4 +1,4 @@
-# Complete Beginner's Tutorial: Writing PIC Assembly with GnSasm
+# Complete Beginner's Tutorial: Writing PIC Assembly with gnsasm
 
 This tutorial will teach you how to write working PIC assembly code from scratch, even if you've never programmed a microcontroller before.
 
@@ -25,7 +25,7 @@ This tutorial will teach you how to write working PIC assembly code from scratch
 - 5V power supply
 
 ### Software
-- **GnSasm** - This assembler (already built)
+- **gnsasm** - This assembler (already built)
 - **MPLAB IPE** - For programming the PIC (free from Microchip)
 - A text editor (VS Code, Notepad++, or any plain text editor)
 
@@ -38,7 +38,7 @@ Open a terminal and run:
 
 You should see:
 ```
-GnSasm PIC Assembler v1.2
+gnsasm PIC Assembler v1.2
 ```
 
 ---
@@ -804,7 +804,7 @@ MOVLW d'100'        ; Explicit decimal
 
 You've learned:
 - ✅ How to write PIC assembly code
-- ✅ How to assemble it with GnSasm
+- ✅ How to assemble it with gnsasm
 - ✅ How to program a real PIC chip
 - ✅ Common patterns and techniques
 - ✅ How to debug problems
