@@ -1258,7 +1258,7 @@ private:
     static constexpr DeviceSpec PIC16F1503_SPEC{
         "PIC16F1503",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1266,7 +1266,7 @@ private:
     static constexpr DeviceSpec PIC16F1507_SPEC{
         "PIC16F1507",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1274,7 +1274,7 @@ private:
     static constexpr DeviceSpec PIC16F1508_SPEC{
         "PIC16F1508",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1282,7 +1282,7 @@ private:
     static constexpr DeviceSpec PIC16F1509_SPEC{
         "PIC16F1509",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1290,7 +1290,7 @@ private:
     static constexpr DeviceSpec PIC16F1512_SPEC{
         "PIC16F1512",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1298,7 +1298,7 @@ private:
     static constexpr DeviceSpec PIC16F1513_SPEC{
         "PIC16F1513",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1306,7 +1306,7 @@ private:
     static constexpr DeviceSpec PIC16F1516_SPEC{
         "PIC16F1516",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1314,7 +1314,7 @@ private:
     static constexpr DeviceSpec PIC16F1517_SPEC{
         "PIC16F1517",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1322,7 +1322,7 @@ private:
     static constexpr DeviceSpec PIC16F1518_SPEC{
         "PIC16F1518",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1330,7 +1330,7 @@ private:
     static constexpr DeviceSpec PIC16F1519_SPEC{
         "PIC16F1519",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1338,7 +1338,7 @@ private:
     static constexpr DeviceSpec PIC16F15213_SPEC{
         "PIC16F15213",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1346,7 +1346,7 @@ private:
     static constexpr DeviceSpec PIC16F15214_SPEC{
         "PIC16F15214",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1354,7 +1354,7 @@ private:
     static constexpr DeviceSpec PIC16F15223_SPEC{
         "PIC16F15223",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1362,7 +1362,7 @@ private:
     static constexpr DeviceSpec PIC16F15224_SPEC{
         "PIC16F15224",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1370,7 +1370,7 @@ private:
     static constexpr DeviceSpec PIC16F15225_SPEC{
         "PIC16F15225",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1378,7 +1378,7 @@ private:
     static constexpr DeviceSpec PIC16F15243_SPEC{
         "PIC16F15243",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1386,7 +1386,7 @@ private:
     static constexpr DeviceSpec PIC16F15244_SPEC{
         "PIC16F15244",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1394,7 +1394,7 @@ private:
     static constexpr DeviceSpec PIC16F15245_SPEC{
         "PIC16F15245",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1402,7 +1402,7 @@ private:
     static constexpr DeviceSpec PIC16F15254_SPEC{
         "PIC16F15254",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1410,7 +1410,7 @@ private:
     static constexpr DeviceSpec PIC16F15255_SPEC{
         "PIC16F15255",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1418,7 +1418,7 @@ private:
     static constexpr DeviceSpec PIC16F15256_SPEC{
         "PIC16F15256",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1426,7 +1426,7 @@ private:
     static constexpr DeviceSpec PIC16F1526_SPEC{
         "PIC16F1526",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1434,7 +1434,7 @@ private:
     static constexpr DeviceSpec PIC16F1527_SPEC{
         "PIC16F1527",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1442,7 +1442,7 @@ private:
     static constexpr DeviceSpec PIC16F15274_SPEC{
         "PIC16F15274",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1450,7 +1450,7 @@ private:
     static constexpr DeviceSpec PIC16F15275_SPEC{
         "PIC16F15275",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1458,7 +1458,7 @@ private:
     static constexpr DeviceSpec PIC16F15276_SPEC{
         "PIC16F15276",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1466,7 +1466,7 @@ private:
     static constexpr DeviceSpec PIC16F15313_SPEC{
         "PIC16F15313",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory (DS40001843C)
         256,       // EEPROM
         Architecture::PIC16
     };
@@ -1474,7 +1474,7 @@ private:
     static constexpr DeviceSpec PIC16F15323_SPEC{
         "PIC16F15323",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1482,7 +1482,7 @@ private:
     static constexpr DeviceSpec PIC16F15324_SPEC{
         "PIC16F15324",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1490,7 +1490,7 @@ private:
     static constexpr DeviceSpec PIC16F15325_SPEC{
         "PIC16F15325",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1498,7 +1498,7 @@ private:
     static constexpr DeviceSpec PIC16F15344_SPEC{
         "PIC16F15344",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1506,7 +1506,7 @@ private:
     static constexpr DeviceSpec PIC16F15345_SPEC{
         "PIC16F15345",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1514,7 +1514,7 @@ private:
     static constexpr DeviceSpec PIC16F15354_SPEC{
         "PIC16F15354",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1522,7 +1522,7 @@ private:
     static constexpr DeviceSpec PIC16F15355_SPEC{
         "PIC16F15355",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1530,7 +1530,7 @@ private:
     static constexpr DeviceSpec PIC16F15356_SPEC{
         "PIC16F15356",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1538,7 +1538,7 @@ private:
     static constexpr DeviceSpec PIC16F15375_SPEC{
         "PIC16F15375",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1546,7 +1546,7 @@ private:
     static constexpr DeviceSpec PIC16F15376_SPEC{
         "PIC16F15376",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1554,7 +1554,7 @@ private:
     static constexpr DeviceSpec PIC16F15385_SPEC{
         "PIC16F15385",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -1562,7 +1562,7 @@ private:
     static constexpr DeviceSpec PIC16F15386_SPEC{
         "PIC16F15386",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3378,7 +3378,7 @@ private:
     static constexpr DeviceSpec PIC16LF1503_SPEC{
         "PIC16LF1503",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3386,7 +3386,7 @@ private:
     static constexpr DeviceSpec PIC16LF1507_SPEC{
         "PIC16LF1507",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3394,7 +3394,7 @@ private:
     static constexpr DeviceSpec PIC16LF1508_SPEC{
         "PIC16LF1508",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3402,7 +3402,7 @@ private:
     static constexpr DeviceSpec PIC16LF1509_SPEC{
         "PIC16LF1509",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3410,7 +3410,7 @@ private:
     static constexpr DeviceSpec PIC16LF1512_SPEC{
         "PIC16LF1512",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3418,7 +3418,7 @@ private:
     static constexpr DeviceSpec PIC16LF1513_SPEC{
         "PIC16LF1513",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3426,7 +3426,7 @@ private:
     static constexpr DeviceSpec PIC16LF1516_SPEC{
         "PIC16LF1516",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3434,7 +3434,7 @@ private:
     static constexpr DeviceSpec PIC16LF1517_SPEC{
         "PIC16LF1517",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3442,7 +3442,7 @@ private:
     static constexpr DeviceSpec PIC16LF1518_SPEC{
         "PIC16LF1518",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3450,7 +3450,7 @@ private:
     static constexpr DeviceSpec PIC16LF1519_SPEC{
         "PIC16LF1519",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3458,7 +3458,7 @@ private:
     static constexpr DeviceSpec PIC16LF1526_SPEC{
         "PIC16LF1526",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3466,7 +3466,7 @@ private:
     static constexpr DeviceSpec PIC16LF1527_SPEC{
         "PIC16LF1527",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3474,7 +3474,7 @@ private:
     static constexpr DeviceSpec PIC16LF15313_SPEC{
         "PIC16LF15313",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3482,7 +3482,7 @@ private:
     static constexpr DeviceSpec PIC16LF15323_SPEC{
         "PIC16LF15323",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3490,7 +3490,7 @@ private:
     static constexpr DeviceSpec PIC16LF15324_SPEC{
         "PIC16LF15324",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3498,7 +3498,7 @@ private:
     static constexpr DeviceSpec PIC16LF15325_SPEC{
         "PIC16LF15325",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3506,7 +3506,7 @@ private:
     static constexpr DeviceSpec PIC16LF15344_SPEC{
         "PIC16LF15344",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3514,7 +3514,7 @@ private:
     static constexpr DeviceSpec PIC16LF15345_SPEC{
         "PIC16LF15345",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3522,7 +3522,7 @@ private:
     static constexpr DeviceSpec PIC16LF15354_SPEC{
         "PIC16LF15354",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3530,7 +3530,7 @@ private:
     static constexpr DeviceSpec PIC16LF15355_SPEC{
         "PIC16LF15355",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3538,7 +3538,7 @@ private:
     static constexpr DeviceSpec PIC16LF15356_SPEC{
         "PIC16LF15356",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3546,7 +3546,7 @@ private:
     static constexpr DeviceSpec PIC16LF15375_SPEC{
         "PIC16LF15375",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3554,7 +3554,7 @@ private:
     static constexpr DeviceSpec PIC16LF15376_SPEC{
         "PIC16LF15376",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3562,7 +3562,7 @@ private:
     static constexpr DeviceSpec PIC16LF15385_SPEC{
         "PIC16LF15385",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
@@ -3570,7 +3570,7 @@ private:
     static constexpr DeviceSpec PIC16LF15386_SPEC{
         "PIC16LF15386",
         2048,      // program memory
-        256,       // data memory
+        512,       // data memory
         256,     // EEPROM
         Architecture::PIC16
     };
