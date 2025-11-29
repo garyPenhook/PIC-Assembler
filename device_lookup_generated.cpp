@@ -1,18 +1,3 @@
-#include "device_specs.h"
-#include <algorithm>
-#include <cctype>
-DeviceSpec DeviceSpecs::getDeviceSpec(Architecture arch) {
-    switch (arch) {
-        case Architecture::PIC12:
-            return PIC10F200_SPEC;  // First available PIC12 device
-        case Architecture::PIC16:
-            return PIC16F1847_SPEC;  // Popular mid-range default
-        case Architecture::PIC18:
-            return PIC18F06Q40_SPEC;  // Largest Q40 variant
-    }
-    return PIC16F1847_SPEC;  // Fallback
-}
-std::optional<DeviceSpec> DeviceSpecs::getDeviceSpecByName(const std::string& deviceName) {
 // Auto-generated device lookup code
 // This code should replace the content of getDeviceSpecByName() in device_specs.cpp
 
@@ -216,41 +201,3 @@ std::optional<DeviceSpec> DeviceSpecs::getDeviceSpecByName(const std::string& de
     if (deviceName == "PIC18F4680") return PIC18F4680_SPEC;
 
     return std::nullopt;  // Device not found
-}
-std::optional<Architecture> DeviceSpecs::inferArchitectureFromDeviceName(const std::string& name) {
-    std::string upperName = name;
-    std::transform(upperName.begin(), upperName.end(), upperName.begin(), ::toupper);
-    if (upperName.find("PIC18") == 0) {
-        return Architecture::PIC18;
-    } else if (upperName.find("PIC16") == 0) {
-        return Architecture::PIC16;
-    } else if (upperName.find("PIC12") == 0 || upperName.find("PIC10") == 0) {
-        return Architecture::PIC12;
-    }
-    return std::nullopt;
-}
-std::string DeviceSpecs::extractDeviceNameFromIncFile(const std::string& incFile) {
-    std::string name = incFile;
-    // Remove .inc extension
-    size_t dotPos = name.find_last_of('.');
-    if (dotPos != std::string::npos) {
-        name = name.substr(0, dotPos);
-    }
-    // Remove path
-    size_t slashPos = name.find_last_of("/\\");
-    if (slashPos != std::string::npos) {
-        name = name.substr(slashPos + 1);
-    }
-    // Remove .cgen suffix
-    size_t cgenPos = name.find(".cgen");
-    if (cgenPos != std::string::npos) {
-        name = name.substr(0, cgenPos);
-    }
-    // Convert to uppercase
-    std::transform(name.begin(), name.end(), name.begin(), ::toupper);
-    // Add PIC prefix if not present
-    if (name.find("PIC") != 0) {
-        name = "PIC" + name;
-    }
-    return name;
-}
