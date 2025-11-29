@@ -171,7 +171,7 @@ PIC18F06Q40: 65536 bytes program, 4192 bytes data, 512 bytes EEPROM
 
 ## What's Next?
 
-1. **Pick a device** from the 874 supported options
+1. **Pick a device** from the 1,031 supported options
 2. **Add `.PROCESSOR Device` to your .asm file
 3. **Assemble**: `./build/gnsasm program.asm -o program.hex`
 4. **Done!** Accurate device specs automatically applied
@@ -179,7 +179,7 @@ PIC18F06Q40: 65536 bytes program, 4192 bytes data, 512 bytes EEPROM
 ## Questions?
 
 - **How do I use it?** → See QUICK_REFERENCE.md
-- **What devices work?** → See DEVICE_SUPPORT.md (all 874 listed)
+- **What devices work?** → See DEVICE_SUPPORT.md (all 1,031 listed)
 - **How does it work?** → See IMPLEMENTATION_SUMMARY.md
 - **Give me an overview** → See README_DEVICES.md
 
