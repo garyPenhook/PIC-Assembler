@@ -1,0 +1,178 @@
+#!/usr/bin/env python3
+"""
+Extract device specifications from Microchip device pack XML files
+and generate C++ header file with device specs.
+"""
+
+import xml.etree.ElementTree as ET
+import os
+import sys
+from pathlib import Path
+import re
+
+def parse_pic_xml(xml_file):
+    """Parse a PIC XML file and extract memory specifications"""
+    try:
+        tree = ET.parse(xml_file)
+        root = tree.getroot()
+
+        # Extract device name
+        device_name = root.get('{http://crownking/edc}name', '')
+        if not device_name:
+            return None
+
+        # Determine architecture from arch attribute
+        arch_attr = root.get('{http://crownking/edc}arch', '')
+        if arch_attr.startswith('16E') or arch_attr.startswith('16F') or arch_attr.startswith('16L'):
+            architecture = 'PIC16'
+        elif arch_attr.startswith('18'):
+            architecture = 'PIC18'
+        elif arch_attr.startswith('10') or arch_attr.startswith('12'):
+            architecture = 'PIC12'
+        else:
+            # Try to infer from device name
+            if device_name.startswith('PIC18'):
+                architecture = 'PIC18'
+            elif device_name.startswith('PIC16'):
+                architecture = 'PIC16'
+            elif device_name.startswith('PIC10') or device_name.startswith('PIC12'):
+                architecture = 'PIC12'
+            else:
+                return None
+
+        # Find program memory (CodeSector)
+        program_memory_bytes = 0
+        for code_sector in root.findall('.//{http://crownking/edc}CodeSector'):
+            begin = code_sector.get('{http://crownking/edc}beginaddr', '0x0')
+            end = code_sector.get('{http://crownking/edc}endaddr', '0x0')
+
+            begin_addr = int(begin, 16) if begin.startswith('0x') else int(begin)
+            end_addr = int(end, 16) if end.startswith('0x') else int(end)
+
+            # Code is in WORDS for PIC, convert to bytes
+            words = end_addr - begin_addr
+            program_memory_bytes += words * 2
+
+        # Find data memory (GPR - General Purpose Registers)
+        # Look for the main GPR bank (gprnobank or gpr0)
+        data_memory_bytes = 0
+        gpr_sizes = []
+
+        for gpr_sector in root.findall('.//{http://crownking/edc}GPRDataSector'):
+            region_id = gpr_sector.get('{http://crownking/edc}regionid', '')
+            shadow_ref = gpr_sector.get('{http://crownking/edc}shadowidref', '')
+
+            # Only count unique regions (not shadows)
+            if shadow_ref == '':
+                begin = gpr_sector.get('{http://crownking/edc}beginaddr', '0x0')
+                end = gpr_sector.get('{http://crownking/edc}endaddr', '0x0')
+
+                begin_addr = int(begin, 16) if begin.startswith('0x') else int(begin)
+                end_addr = int(end, 16) if end.startswith('0x') else int(end)
+
+                size = end_addr - begin_addr
+                gpr_sizes.append(size)
+
+        data_memory_bytes = sum(gpr_sizes)
+
+        # Find EEPROM memory
+        eeprom_bytes = 0
+        for ee_sector in root.findall('.//{http://crownking/edc}EEDataSector'):
+            begin = ee_sector.get('{http://crownking/edc}beginaddr', '0x0')
+            end = ee_sector.get('{http://crownking/edc}endaddr', '0x0')
+
+            begin_addr = int(begin, 16) if begin.startswith('0x') else int(begin)
+            end_addr = int(end, 16) if end.startswith('0x') else int(end)
+
+            eeprom_bytes += end_addr - begin_addr
+
+        return {
+            'name': device_name,
+            'program_memory': program_memory_bytes,
+            'data_memory': data_memory_bytes,
+            'eeprom': eeprom_bytes,
+            'architecture': architecture
+        }
+
+    except Exception as e:
+        print(f"Error parsing {xml_file}: {e}", file=sys.stderr)
+        return None
+
+def scan_device_packs(base_dir):
+    """Scan all device pack directories for PIC XML files"""
+    devices = []
+    device_names = set()  # Track device names to avoid duplicates
+
+    # Find all Microchip device pack directories
+    for pack_dir in Path(base_dir).glob('Microchip.*atpack_FILES'):
+        print(f"Scanning {pack_dir.name}...", file=sys.stderr)
+
+        # Find all .PIC files in edc subdirectory
+        edc_dir = pack_dir / 'edc'
+        if not edc_dir.exists():
+            continue
+
+        for pic_file in edc_dir.glob('*.PIC'):
+            device_spec = parse_pic_xml(pic_file)
+            if device_spec and device_spec['name'] not in device_names:
+                devices.append(device_spec)
+                device_names.add(device_spec['name'])
+
+    return devices
+
+def generate_header_file(devices, output_file):
+    """Generate C++ header file with device specifications"""
+
+    # Sort devices by name
+    devices.sort(key=lambda d: d['name'])
+
+    with open(output_file, 'w') as f:
+        f.write("""/**
+ * Auto-generated Device Specifications
+ * Generated from Microchip device pack XML files
+ * Total devices: """ + str(len(devices)) + """
+ * 
+ * DO NOT EDIT THIS FILE MANUALLY
+ * Use tools/extract_device_specs_from_xml.py to regenerate
+ */
+
+""")
+
+        # Generate device spec constants
+        for device in devices:
+            safe_name = device['name'].upper().replace('-', '_').replace('/', '_')
+            f.write(f"""    static constexpr DeviceSpec {safe_name}_SPEC{{
+        "{device['name']}",
+        {device['program_memory']},      // program memory (bytes)
+        {device['data_memory']},       // data memory (RAM bytes)
+        {device['eeprom']},     // EEPROM (bytes)
+        Architecture::{device['architecture']}
+    }};
+
+""")
+
+    print(f"Generated {output_file} with {len(devices)} devices", file=sys.stderr)
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: extract_device_specs_from_xml.py <project_root_dir> [output_file]")
+        sys.exit(1)
+
+    project_root = sys.argv[1]
+    output_file = sys.argv[2] if len(sys.argv) > 2 else os.path.join(project_root, 'device_specs_generated_new.h')
+
+    print(f"Scanning device packs in {project_root}...", file=sys.stderr)
+    devices = scan_device_packs(project_root)
+
+    if not devices:
+        print("No devices found!", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"Found {len(devices)} devices", file=sys.stderr)
+
+    generate_header_file(devices, output_file)
+    print(f"Done! Generated {output_file}", file=sys.stderr)
+
+if __name__ == '__main__':
+    main()
+
