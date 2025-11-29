@@ -190,16 +190,17 @@ void Assembler::printStatistics() const {
     // Use the current device spec that may have been set by PROCESSOR or auto-detected
     const DeviceSpec& spec = currentDeviceSpec;
     uint32_t progMemUsed = getProgramMemoryUsed();
-    double progMemPercent = getProgramMemoryPercentage();
+    uint32_t progMemTotal = getProgramMemoryTotal();
+    double progMemPercent = (progMemTotal > 0) ? (progMemUsed * 100.0) / progMemTotal : 0.0;
 
     std::cout << "Assembly Statistics:\n";
     std::cout << "  Device: " << spec.name << "\n";
     std::cout << "  Total instructions: " << generatedCode.size() << "\n";
-    if (generatedCode.size() > 0) {
+    if (!generatedCode.empty()) {
         std::cout << "  Address range: 0x" << std::hex << generatedCode.front().address
                   << " - 0x" << generatedCode.back().address << std::dec << "\n";
     }
-    std::cout << "  Program Memory: " << progMemUsed << " bytes / " << spec.programMemoryBytes
+    std::cout << "  Program Memory: " << progMemUsed << " bytes / " << progMemTotal
               << " bytes (" << std::fixed << std::setprecision(2) << progMemPercent << "%)\n";
     std::cout << "  Data Memory: 0 bytes / " << spec.dataMemoryBytes << " bytes (0.00%)\n";
     if (spec.eepromBytes > 0) {
