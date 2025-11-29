@@ -82,8 +82,8 @@ DEVICE_SPECS = {
     "PIC16F15254": {"prog": 4096, "data": 512, "eeprom": 256, "arch": "PIC16"},
     "PIC16F15255": {"prog": 4096, "data": 512, "eeprom": 256, "arch": "PIC16"},
     "PIC16F15256": {"prog": 4096, "data": 512, "eeprom": 256, "arch": "PIC16"},
-    "PIC16F15313": {"prog": 2048, "data": 512, "eeprom": 256, "arch": "PIC16"},
-    "PIC16F15323": {"prog": 2048, "data": 512, "eeprom": 256, "arch": "PIC16"},
+    "PIC16F15313": {"prog": 3584, "data": 256, "eeprom": 256, "arch": "PIC16"},  # 3.5KB Flash, 256B SRAM (DS40002106)
+    "PIC16F15323": {"prog": 3584, "data": 256, "eeprom": 256, "arch": "PIC16"},  # 3.5KB Flash, 256B SRAM (DS40002106)
     "PIC16F15324": {"prog": 2048, "data": 512, "eeprom": 256, "arch": "PIC16"},
     "PIC16F15325": {"prog": 2048, "data": 512, "eeprom": 256, "arch": "PIC16"},
     "PIC16F15344": {"prog": 4096, "data": 512, "eeprom": 256, "arch": "PIC16"},

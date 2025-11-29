@@ -1435,16 +1435,16 @@
 
     static constexpr DeviceSpec PIC16F15313_SPEC{
         "PIC16F15313",
-        2048,      // program memory
-        1024,       // data memory
+        3584,      // program memory (3.5KB Flash)
+        256,       // data memory (256 Bytes SRAM)
         256,     // EEPROM
         Architecture::PIC16
     };
 
     static constexpr DeviceSpec PIC16F15323_SPEC{
         "PIC16F15323",
-        2048,      // program memory
-        1024,       // data memory
+        3584,      // program memory (3.5KB Flash)
+        256,       // data memory (256 Bytes SRAM)
         256,     // EEPROM
         Architecture::PIC16
     };
