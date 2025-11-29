@@ -2,7 +2,22 @@
 
 ## ✅ Recently Completed Features
 
-### Device Register Names & Listing Files (Latest Session)
+### Device Auto-Detection & PROCESSOR Directive (Latest Session)
+- [x] Auto-detection of device from #include directives
+  - Extract device name from `#include <pic16f18076.inc>` filename
+  - Automatically set device memory specifications (program/data/EEPROM)
+  - Infer architecture (PIC12/16/18) from device name
+- [x] PROCESSOR directive implementation
+  - `PROCESSOR deviceName` to explicitly set target device
+  - Device memory specs automatically configured
+  - Priority: PROCESSOR takes precedence over #include if both specified
+  - Works with built-in device database (11 devices: PIC16F506, PIC12F629, PIC12F683, PIC16F1840, PIC16F1847, PIC16F18076, PIC16F877A, PIC18F04Q40, PIC18F05Q40, PIC18F06Q40, PIC18F14Q40, PIC18F15Q40, PIC18F16Q40)
+- [x] Device memory specification tracking
+  - Added currentDeviceSpec tracking to Assembler and Parser
+  - Memory stats reflect actual selected device, not just architecture
+  - Proper display of device name in assembly statistics
+
+### Device Register Names & Listing Files
 - [x] Symbolic device register names from .inc files
   - Load register definitions from Microchip device include files
   - Case-insensitive register name resolution (PORTA = porta = PortA)
@@ -126,7 +141,7 @@
 - [ ] RES - reserve memory space
 - [ ] \_\_IDLOCS - set ID locations
 - [ ] \_\_MAXRAM/\_\_BADRAM - memory range definitions
-- [ ] PROCESSOR - set target processor
+- [x] PROCESSOR - set target processor (✅ Implemented!)
 - [ ] VARIABLE - create variable (similar to SET)
 - [ ] CONSTANT - create constant (similar to EQU)
 

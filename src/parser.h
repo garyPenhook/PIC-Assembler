@@ -6,6 +6,7 @@
 #include "error_reporter.h"
 #include "exceptions.h"
 #include "macro_table.h"
+#include "device_specs.h"
 #include <vector>
 #include <string>
 #include <stdexcept>
@@ -108,6 +109,13 @@ public:
     // Device register loading from .inc files
     void loadDeviceRegistersFromFile(const std::string& filePath);
 
+    // Get/set current device spec
+    const DeviceSpec& getDeviceSpec() const { return currentDeviceSpec; }
+    void setDeviceSpec(const DeviceSpec& spec);
+
+    // Set device by name (used by PROCESSOR directive)
+    void setDeviceByName(const std::string& deviceName);
+
 private:
     std::vector<Token> tokens;
     size_t currentPos;
@@ -115,6 +123,7 @@ private:
     uint16_t programCounter;
     ErrorReporter errorReporter;
     Architecture currentArch;
+    DeviceSpec currentDeviceSpec;  // Track current device specifications
     std::vector<DataDefinition> dataDefinitions;
     std::vector<ConfigWord> configWords;
     std::vector<ParsedInstruction> generatedInstructions;  // For DT/macros

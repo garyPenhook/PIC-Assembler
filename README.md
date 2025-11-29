@@ -53,83 +53,136 @@ A modern, standards-compliant assembler for Microchip® PIC® microcontrollers w
 - Cross-architecture development support
 - Embedded project integration
 
-## Device Register Names and Include Files
+## Device Specification and Register Names
 
-GnSasm now supports **optional symbolic device register names** from Microchip device include files (`.inc` files), providing full compatibility with MPASM-style assembly code. However, **include files are not required** - you can use numeric addresses directly.
+GnSasm provides **three ways to work with device specifications and register names**:
 
-### Two Approaches to PIC Assembly
+### 1. Auto-Detection from #include (Recommended)
 
-**Approach 1: Direct Numeric Addresses (Recommended for Simplicity)**
-
-No include files needed - reference registers by their hex addresses:
-
-```asm
-        ORG 0x0000
-
-        MOVLW 0xFF
-        MOVWF 0x0C      ; 0x0C = PORTA address
-        BSF   0x03, 2   ; 0x03 = STATUS address, bit 2 = Z flag
-        INCF  0x20, 1   ; 0x20 = general purpose RAM
-```
-
-**Approach 2: Symbolic Register Names (MPASM-Compatible)**
-
-Use device include files for symbolic names:
+The assembler automatically detects the target device from included `.inc` files and sets the device memory specifications accordingly:
 
 ```asm
 #include <pic16f18076.inc>
 
         ORG 0x0000
 
-        ; Use symbolic names from the include file
+        ; Device is auto-detected: PIC16F18076 (4KB program, 1920 bytes RAM, 1KB EEPROM)
+        ; Register names from include file are available
         MOVLW 0xFF
         MOVWF PORTA         ; PORTA = 0x0C (loaded from .inc)
         BSF   STATUS, Z     ; STATUS = 0x03 (loaded from .inc)
-        INCF  buffer, F     ; buffer = user-defined variable
 ```
 
-### When to Use Include Files
+**Benefits:**
+- ✅ Device specs automatically set from include file
+- ✅ Full MPASM-compatible symbolic register names
+- ✅ No need for separate PROCESSOR directive if using #include
 
-**Use direct addresses if:**
-- You want the simplest, most portable code
-- You don't want external dependencies
-- You know the register addresses from your datasheet
-- You prefer minimal overhead
+### 2. Explicit Device Selection with PROCESSOR Directive
 
-**Use include files if:**
-- You want MPASM-compatible symbolic names
-- Your code is long and readability matters
-- You want to avoid address typos
-- You're porting code from MPASM
+Use the `PROCESSOR` directive to explicitly set the target device:
 
-### How Include Files Work
+```asm
+PROCESSOR PIC16F18076
 
-1. **Load register definitions:** `#include <device.inc>` loads register name definitions
+        ORG 0x0000
+
+        MOVLW 0xFF
+        MOVWF 0x0C          ; Can use numeric addresses or include symbolic names
+```
+
+**Benefits:**
+- ✅ Explicit device selection for clarity
+- ✅ Device memory specs automatically configured
+- ✅ Takes priority over #include if both are specified
+- ✅ Self-documenting code
+
+### 3. Direct Numeric Addresses (No Device Specification)
+
+Reference registers by their numeric addresses without include files:
+
+```asm
+        ORG 0x0000
+
+        MOVLW 0xFF
+        MOVWF 0x0C          ; 0x0C = PORTA address
+        BSF   0x03, 2       ; 0x03 = STATUS address, bit 2 = Z flag
+        INCF  0x20, 1       ; 0x20 = general purpose RAM
+```
+
+**Benefits:**
+- ✅ Simplest approach - no dependencies
+- ✅ Works offline without include files
+- ✅ Portable across different assemblers
+
+### Device Auto-Detection and Priority
+
+- **Auto-detection:** If `#include <pic16f18076.inc>` is present, device is automatically set to PIC16F18076
+- **PROCESSOR priority:** If both #include and PROCESSOR are specified, PROCESSOR takes priority
+- **Memory specs:** Device memory configuration (program/data/EEPROM sizes) is set based on selected device
+- **Command-line override:** `-a pic16` or `-a pic18` still specifies the architecture, but device specs come from PROCESSOR or #include
+
+### Including Device Register Names
+
+When using device register names from include files:
+
+1. **Load definitions:** `#include <device.inc>` loads register name definitions
 2. **Case-insensitive:** Register names work in any case: `PORTA = porta = PortA`
 3. **Protected:** Device registers cannot be redefined with EQU or SET directives
 4. **Priority:** Device registers have highest priority in symbol resolution
+5. **Works with or without PROCESSOR:** You can use #include alone (auto-detection) or combine with PROCESSOR
 
 ### Supported Devices
 
-The assembler itself supports **all PIC® microcontroller families** including:
+The assembler supports **all PIC® microcontroller families** including:
 - **PIC12** baseline series (12-bit instructions)
 - **PIC16/PIC16F** mid-range and enhanced mid-range (14-bit instructions)
 - **PIC18/PIC18-Q40** high-performance (16-bit instructions)
 
-Device include files are available from Microchip for **2,903+ devices**. See "Getting Device Include Files" above for how to obtain them.
+**Built-in Device Specs:**
+The following devices have built-in memory specifications that can be set via PROCESSOR directive:
+- PIC16F506, PIC12F629, PIC12F683
+- PIC16F1840, PIC16F1847, PIC16F18076, PIC16F877A
+- PIC18F04Q40, PIC18F05Q40, PIC18F06Q40, PIC18F14Q40, PIC18F15Q40, PIC18F16Q40
+
+**Device Include Files:**
+Microchip provides include files (`.inc`) for **2,903+ devices** with symbolic register names. These can be used with the `#include <device.inc>` directive, which also auto-detects the device specifications.
 
 ### Getting Device Include Files
 
 Device include files (`.inc`) are **optional** for basic assembly. They provide symbolic register names but are not required.
 
-**Option 1: Use without device files (Simplest)**
-- Use numeric addresses directly (see Approach 1 above)
-- No additional setup needed
-- Fully portable and self-contained
+**Option 1: Direct Numeric Addresses (Simplest - No Device Files Needed)**
+```asm
+; Use numeric addresses directly
+ORG 0x0000
+MOVLW 0xFF
+MOVWF 0x0C          ; 0x0C = PORTA
+```
 
-**Option 2: Add device files (MPASM-compatible)**
+**Option 2: Use PROCESSOR Directive (Built-in Devices)**
+```asm
+; Explicitly set device with built-in memory specs
+PROCESSOR PIC16F18076
 
-Device include files are provided by Microchip and can be extracted from their official device family packs (DFP). To use them:
+ORG 0x0000
+MOVLW 0xFF
+MOVWF 0x0C
+```
+
+**Option 3: Use #include (Auto-Detection)**
+```asm
+; Auto-detect device and get symbolic register names
+#include <pic16f18076.inc>
+
+ORG 0x0000
+MOVLW 0xFF
+MOVWF PORTA         ; Symbolic name from include file
+```
+
+**Option 4: Install Microchip Device Files (Full Device Support)**
+
+To get symbolic register names for devices beyond the built-in set, download and extract Microchip's device family packs:
 
 1. **Download from Microchip:**
    - Visit [Microchip Device Family Packs](https://packs.download.microchip.com/)
@@ -147,6 +200,7 @@ Device include files are provided by Microchip and can be extracted from their o
    ```asm
    #include <pic16f18076.inc>
    ; Now you can use symbolic names like PORTA, STATUS, etc.
+   ; Device is auto-detected: PIC16F18076
    ```
 
 Microchip's device include files are copyrighted and should be obtained directly from Microchip's official sources. They are not included in this repository to comply with licensing requirements.

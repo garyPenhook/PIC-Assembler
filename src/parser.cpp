@@ -8,12 +8,29 @@
 #include <regex>
 
 Parser::Parser(const std::vector<Token>& tokens, Architecture arch)
-    : tokens(tokens), currentPos(0), programCounter(0), currentArch(arch), defaultRadix(10),
+    : tokens(tokens), currentPos(0), programCounter(0), currentArch(arch),
+      currentDeviceSpec(DeviceSpecs::getDeviceSpec(arch)), defaultRadix(10),
       insideCBLOCK(false), cblockAddress(0),
       currentSectionType(SectionType::CODE), currentSectionName("_default_code"),
       codeProgramCounter(0), dataProgramCounter(0),
       insideMacroDefinition(false),
       macroExpansionDepth(0), localLabelCounter(0), conditionalDepth(0) {}
+
+void Parser::setDeviceSpec(const DeviceSpec& spec) {
+    currentDeviceSpec = spec;
+}
+
+void Parser::setDeviceByName(const std::string& deviceName) {
+    auto spec = DeviceSpecs::getDeviceSpecByName(deviceName);
+    if (spec) {
+        setDeviceSpec(spec.value());
+        // Update architecture based on device
+        auto arch = DeviceSpecs::inferArchitectureFromDeviceName(deviceName);
+        if (arch) {
+            currentArch = arch.value();
+        }
+    }
+}
 
 Token& Parser::current() {
     static Token eof{TokenType::END_OF_FILE, "", 0, 0};
@@ -581,8 +598,10 @@ void Parser::parseDirective(const Token& directive) {
         if (currentPos > 0) currentPos--;
     } else if (dirName == "PROCESSOR") {
         // PROCESSOR deviceName - set target device
-        advance();  // Skip to device name
+        advance();  // Move to device name
         if (check(TokenType::IDENTIFIER)) {
+            std::string deviceName = current().value;
+            setDeviceByName(deviceName);
             advance();  // Skip past device name
         }
         // Back up one position

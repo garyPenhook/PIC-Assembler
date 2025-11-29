@@ -15,6 +15,8 @@ Assembler::Assembler(Architecture arch)
     : successful(false), targetArch(arch), lastErrors(std::make_shared<ErrorReporter>()) {
     // Set the architecture in the instruction set
     InstructionSet::getInstance().setArchitecture(arch);
+    // Initialize with default device spec for the architecture
+    currentDeviceSpec = DeviceSpecs::getDeviceSpec(arch);
 }
 
 std::vector<AssembledCode> Assembler::assemble(const std::string& source) {
@@ -49,14 +51,39 @@ std::vector<AssembledCode> Assembler::assemble(const std::string& source) {
                 throw LexerException(1, 1, "No tokens generated from source");
             }
 
-            // Parsing
-            Parser parser(tokens, targetArch);
-
             // Pre-load device registers from included .inc files
             // Scan original source for #include directives (both <*.inc> and "*.inc" formats)
+            // This is done BEFORE creating the parser so we can pass the detected device to it
             std::regex includeRegex(R"(#include\s*[<"]([^>"]+\.inc)[>"])", std::regex_constants::icase);
             std::smatch match;
             std::string searchSource = source;
+            while (std::regex_search(searchSource, match, includeRegex)) {
+                std::string incFile = match[1].str();
+
+                // Extract device name from include filename and auto-detect device
+                std::string deviceName = DeviceSpecs::extractDeviceNameFromIncFile(incFile);
+                auto deviceSpec = DeviceSpecs::getDeviceSpecByName(deviceName);
+                if (deviceSpec) {
+                    // Update current device spec based on #include
+                    currentDeviceSpec = deviceSpec.value();
+                    // Also update target architecture if inferred from device name
+                    auto inferredArch = DeviceSpecs::inferArchitectureFromDeviceName(deviceName);
+                    if (inferredArch) {
+                        targetArch = inferredArch.value();
+                        InstructionSet::getInstance().setArchitecture(targetArch);
+                    }
+                }
+
+                searchSource = match.suffix().str();
+            }
+
+            // Parsing
+            Parser parser(tokens, targetArch);
+            // Sync the auto-detected device spec to the parser
+            parser.setDeviceSpec(currentDeviceSpec);
+
+            // Now load device registers from included .inc files
+            searchSource = source;
             while (std::regex_search(searchSource, match, includeRegex)) {
                 std::string incFile = match[1].str();
                 parser.loadDeviceRegistersFromFile("device_includes/" + incFile);
@@ -73,6 +100,9 @@ std::vector<AssembledCode> Assembler::assemble(const std::string& source) {
                 setError("Parsing failed with " + std::to_string(parser.getErrorReporter().getErrorCount()) + " error(s)");
                 return {};
             }
+
+            // Sync device spec from parser (may have been updated by PROCESSOR directive)
+            currentDeviceSpec = parser.getDeviceSpec();
 
             // Store data definitions from parser
             generatedData = parser.getDataDefinitions();
@@ -150,7 +180,8 @@ void Assembler::printStatistics() const {
         return;
     }
 
-    DeviceSpec spec = DeviceSpecs::getDeviceSpec(targetArch);
+    // Use the current device spec that may have been set by PROCESSOR or auto-detected
+    const DeviceSpec& spec = currentDeviceSpec;
     uint32_t progMemUsed = getProgramMemoryUsed();
     double progMemPercent = getProgramMemoryPercentage();
 
@@ -226,7 +257,8 @@ bool Assembler::generateListFile(const std::string& filename, const std::string&
             sourceLines.push_back(line);
         }
 
-        DeviceSpec spec = DeviceSpecs::getDeviceSpec(targetArch);
+        // Use the current device spec that may have been set by PROCESSOR or auto-detected
+        const DeviceSpec& spec = currentDeviceSpec;
 
         // Header
         file << "================================================================================\n";

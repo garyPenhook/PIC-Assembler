@@ -84,6 +84,9 @@ public:
     double getProgramMemoryPercentage() const;
     double getDataMemoryPercentage() const;
 
+    // Get current device spec
+    const DeviceSpec& getDeviceSpec() const { return currentDeviceSpec; }
+
 private:
     std::vector<AssembledCode> generatedCode;
     std::vector<DataDefinition> generatedData;
@@ -91,6 +94,7 @@ private:
     std::string lastError;
     bool successful;
     Architecture targetArch;
+    DeviceSpec currentDeviceSpec;  // Track current device specifications
     std::shared_ptr<ErrorReporter> lastErrors;
 
     // Helper for error handling
