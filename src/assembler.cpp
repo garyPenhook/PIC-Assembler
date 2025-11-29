@@ -53,8 +53,8 @@ std::vector<AssembledCode> Assembler::assemble(const std::string& source) {
             Parser parser(tokens, targetArch);
 
             // Pre-load device registers from included .inc files
-            // Scan original source for #include <*.inc> directives
-            std::regex includeRegex(R"(#include\s*<([^>]+\.inc)>)", std::regex_constants::icase);
+            // Scan original source for #include directives (both <*.inc> and "*.inc" formats)
+            std::regex includeRegex(R"(#include\s*[<"]([^>"]+\.inc)[>"])", std::regex_constants::icase);
             std::smatch match;
             std::string searchSource = source;
             while (std::regex_search(searchSource, match, includeRegex)) {
