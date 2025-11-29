@@ -86,7 +86,30 @@ std::vector<AssembledCode> Assembler::assemble(const std::string& source) {
             searchSource = source;
             while (std::regex_search(searchSource, match, includeRegex)) {
                 std::string incFile = match[1].str();
-                parser.loadDeviceRegistersFromFile("device_includes/" + incFile);
+
+                // Try multiple search paths for device includes
+                std::vector<std::string> searchPaths = {
+                    "device_includes/" + incFile,                                    // Relative to CWD
+                    "../device_includes/" + incFile,                                 // One level up
+                    "../../device_includes/" + incFile,                              // Two levels up
+                    "/home/w4gns/CLionProjects/PIC-Assembler/device_includes/" + incFile  // Absolute fallback
+                };
+
+                bool loaded = false;
+                for (const auto& path : searchPaths) {
+                    std::ifstream testFile(path);
+                    if (testFile.good()) {
+                        parser.loadDeviceRegistersFromFile(path);
+                        loaded = true;
+                        break;
+                    }
+                }
+
+                if (!loaded) {
+                    // File not found in any search path - will be reported as warning by parser
+                    parser.loadDeviceRegistersFromFile("device_includes/" + incFile);
+                }
+
                 searchSource = match.suffix().str();
             }
 
