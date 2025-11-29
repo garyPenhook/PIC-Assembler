@@ -43,6 +43,27 @@ std::vector<AssembledCode> Assembler::assemble(const std::string& source) {
                 return {};
             }
 
+            // Auto-detect device from included .inc files (before creating parser)
+            // Get the list of files that were actually included during preprocessing
+            for (const auto& includedFile : preprocessor.getIncludedFiles()) {
+                // Check if this is a .inc file
+                if (includedFile.length() >= 4 && includedFile.substr(includedFile.length() - 4) == ".inc") {
+                    // Extract device name and auto-detect device
+                    std::string deviceName = DeviceSpecs::extractDeviceNameFromIncFile(includedFile);
+                    auto deviceSpec = DeviceSpecs::getDeviceSpecByName(deviceName);
+                    if (deviceSpec) {
+                        // Update current device spec based on #include
+                        currentDeviceSpec = deviceSpec.value();
+                        // Also update target architecture if inferred from device name
+                        auto inferredArch = DeviceSpecs::inferArchitectureFromDeviceName(deviceName);
+                        if (inferredArch) {
+                            targetArch = inferredArch.value();
+                            InstructionSet::getInstance().setArchitecture(targetArch);
+                        }
+                    }
+                }
+            }
+
             // Lexical analysis
             Lexer lexer(preprocessedSource);
             std::vector<Token> tokens = lexer.tokenize();
@@ -51,67 +72,20 @@ std::vector<AssembledCode> Assembler::assemble(const std::string& source) {
                 throw LexerException(1, 1, "No tokens generated from source");
             }
 
-            // Pre-load device registers from included .inc files
-            // Scan original source for #include directives (both <*.inc> and "*.inc" formats)
-            // This is done BEFORE creating the parser so we can pass the detected device to it
-            std::regex includeRegex(R"(#include\s*[<"]([^>"]+\.inc)[>"])", std::regex_constants::icase);
-            std::smatch match;
-            std::string searchSource = source;
-            while (std::regex_search(searchSource, match, includeRegex)) {
-                std::string incFile = match[1].str();
-
-                // Extract device name from include filename and auto-detect device
-                std::string deviceName = DeviceSpecs::extractDeviceNameFromIncFile(incFile);
-                auto deviceSpec = DeviceSpecs::getDeviceSpecByName(deviceName);
-                if (deviceSpec) {
-                    // Update current device spec based on #include
-                    currentDeviceSpec = deviceSpec.value();
-                    // Also update target architecture if inferred from device name
-                    auto inferredArch = DeviceSpecs::inferArchitectureFromDeviceName(deviceName);
-                    if (inferredArch) {
-                        targetArch = inferredArch.value();
-                        InstructionSet::getInstance().setArchitecture(targetArch);
-                    }
-                }
-
-                searchSource = match.suffix().str();
-            }
-
             // Parsing
             Parser parser(tokens, targetArch);
             // Sync the auto-detected device spec to the parser
             parser.setDeviceSpec(currentDeviceSpec);
 
             // Now load device registers from included .inc files
-            searchSource = source;
-            while (std::regex_search(searchSource, match, includeRegex)) {
-                std::string incFile = match[1].str();
-
-                // Try multiple search paths for device includes
-                std::vector<std::string> searchPaths = {
-                    "device_includes/" + incFile,                                    // Relative to CWD
-                    "../device_includes/" + incFile,                                 // One level up
-                    "../../device_includes/" + incFile,                              // Two levels up
-                    "/home/w4gns/CLionProjects/PIC-Assembler/device_includes/" + incFile  // Absolute fallback
-                };
-
-                bool loaded = false;
-                for (const auto& path : searchPaths) {
-                    std::ifstream testFile(path);
-                    if (testFile.good()) {
-                        parser.loadDeviceRegistersFromFile(path);
-                        loaded = true;
-                        break;
-                    }
+            for (const auto& includedFile : preprocessor.getIncludedFiles()) {
+                // Check if this is a .inc file
+                if (includedFile.length() >= 4 && includedFile.substr(includedFile.length() - 4) == ".inc") {
+                    // Load device registers from the included file using absolute path
+                    parser.loadDeviceRegistersFromFile(includedFile);
                 }
-
-                if (!loaded) {
-                    // File not found in any search path - will be reported as warning by parser
-                    parser.loadDeviceRegistersFromFile("device_includes/" + incFile);
-                }
-
-                searchSource = match.suffix().str();
             }
+
 
             std::vector<ParsedInstruction> instructions = parser.parse();
 

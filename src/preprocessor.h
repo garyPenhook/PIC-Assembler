@@ -122,6 +122,12 @@ public:
      */
     std::string getSymbolValue(const std::string& name) const;
 
+    /**
+     * Get the set of included files (after processing)
+     * @return Set of absolute paths to included files
+     */
+    const std::set<std::string>& getIncludedFiles() const { return includedFiles; }
+
 private:
     // State
     std::map<std::string, PreprocessorDefine> defines;        // #define table
