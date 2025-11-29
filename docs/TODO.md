@@ -257,9 +257,18 @@ Currently supporting approximately **25+ of 50+ MPASM directives** (~50%)
 8. **Error recovery** - Better developer experience with error recovery
 
 **Lower Priority:**
-9. **PIC18 extended instructions** - Verify all extended instruction encodings
-10. **Comprehensive testing** - Integration tests with real-world PIC programs
-11. **Documentation** - Examples, migration guide from MPASM, troubleshooting
+9. **Complete PIC16 enhanced instruction set** - Add missing 14 instructions for PIC16F1xxx
+   - Missing: LSLF, LSRF, ASRF, ROTF, MOVIW, MOVWI, and 8 others
+   - Currently: 35/49 instructions (71% coverage)
+
+10. **Complete PIC18 extended instruction set** - Add missing 8 extended optimization instructions
+    - Missing: ADDULNK, SUBFSR, and extended table operations
+    - Currently: 75/83 instructions (90% coverage)
+    - Note: These are mostly for C compiler optimization, rarely used in hand-written assembly
+
+11. **Comprehensive testing** - Integration tests with real-world PIC programs
+
+12. **Documentation** - Examples, migration guide from MPASM, troubleshooting
 
 ## 📝 Completion Summary
 
