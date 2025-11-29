@@ -120,6 +120,9 @@ std::vector<AssembledCode> Assembler::assemble(const std::string& source) {
             // Code generation
             InstructionSet& iset = InstructionSet::getInstance();
 
+            // Reserve capacity to avoid reallocations
+            generatedCode.reserve(instructions.size());
+
             for (const auto& parsed : instructions) {
                 try {
                     uint16_t opcode = iset.encodeInstruction(parsed.type, parsed.f_reg,

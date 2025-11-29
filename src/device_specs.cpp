@@ -12,7 +12,8 @@ DeviceSpec DeviceSpecs::getDeviceSpec(Architecture arch) {
     }
     return PIC16F1847_SPEC;
 }
-std::optional<DeviceSpec> DeviceSpecs::getDeviceSpecByName(const std::string& deviceName) {
+
+std::optional<DeviceSpec> DeviceSpecs::getDeviceSpecByName(std::string_view deviceName) {
 // Auto-generated device lookup code
 // This code should replace the content of getDeviceSpecByName() in device_specs.cpp
 
@@ -896,8 +897,9 @@ std::optional<DeviceSpec> DeviceSpecs::getDeviceSpecByName(const std::string& de
 
     return std::nullopt;  // Device not found
 }
-std::optional<Architecture> DeviceSpecs::inferArchitectureFromDeviceName(const std::string& name) {
-    std::string upperName = name;
+
+std::optional<Architecture> DeviceSpecs::inferArchitectureFromDeviceName(std::string_view name) {
+    std::string upperName{name};
     std::transform(upperName.begin(), upperName.end(), upperName.begin(), ::toupper);
     if (upperName.find("PIC18") == 0) {
         return Architecture::PIC18;
@@ -908,8 +910,8 @@ std::optional<Architecture> DeviceSpecs::inferArchitectureFromDeviceName(const s
     }
     return std::nullopt;
 }
-std::string DeviceSpecs::extractDeviceNameFromIncFile(const std::string& incFile) {
-    std::string name = incFile;
+std::string DeviceSpecs::extractDeviceNameFromIncFile(std::string_view incFile) {
+    std::string name{incFile};
     size_t dotPos = name.find_last_of('.');
     if (dotPos != std::string::npos) {
         name = name.substr(0, dotPos);

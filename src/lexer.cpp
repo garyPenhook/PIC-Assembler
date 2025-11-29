@@ -484,6 +484,8 @@ void Lexer::reset() {
 
 std::vector<Token> Lexer::tokenize() {
     std::vector<Token> tokens;
+    // Reserve capacity based on estimate: ~1 token per 8 characters
+    tokens.reserve(source.length() / 8);
     reset();
 
     Token token = nextToken();

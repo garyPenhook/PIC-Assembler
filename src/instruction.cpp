@@ -1,4 +1,5 @@
 #include "instruction.h"
+#include "opcode_builder.h"
 #include <algorithm>
 
 InstructionSet::InstructionSet() {
