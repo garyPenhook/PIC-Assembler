@@ -13,13 +13,17 @@ A modern, standards-compliant assembler for Microchip® PIC® microcontrollers w
 - PIC®18 and PIC®18-Q40 microcontrollers (16-bit instruction words)
 - Architecture-aware instruction validation and encoding
 
-🎯 **Complete Instruction Set Coverage**
-- **PIC®16:** 35 instructions (100% coverage)
+🎯 **Comprehensive Instruction Set Support**
+- **PIC®16:** 35 instructions (Mid-range/Enhanced core)
+  - Baseline (PIC10/12/16): 33 instructions ✓
+  - Enhanced mid-range (PIC16F1xxx): Partial support (35 of 49 instructions)
   - Byte-oriented, bit-oriented, literal/control operations
-- **PIC®18:** 54+ instructions (100% coverage)
-  - All byte-oriented, bit-oriented, conditional branches
+
+- **PIC®18:** 75 instructions (Base instruction set ✓)
+  - Byte-oriented, bit-oriented, conditional branches
   - Compare/skip, table operations, FSR operations
   - Stack operations, multiplication, and more
+  - Note: Extended instruction set (83 instructions) not fully supported
 
 🔍 **Intelligent Error Reporting**
 - Helpful error messages with line/column information
@@ -1464,8 +1468,9 @@ For issues, questions, or suggestions:
 
 **v1.2**
 - Renamed executable to `gnsasm`
-- Complete PIC18 instruction set implementation (54+ instructions)
+- Complete PIC18 instruction set implementation (75 base instructions)
 - All instructions fully encoded and tested
+- Support for PIC16 baseline and enhanced mid-range cores
 - Intel HEX output generation with proper checksums
 - Memory usage statistics display
 

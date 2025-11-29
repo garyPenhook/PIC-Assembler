@@ -138,9 +138,28 @@
 - [x] HIGH/LOW/UPPER operators for address manipulation
 - [ ] String expressions and concatenation
 
-### PIC18-Specific Instructions
+### Instruction Set Coverage Analysis
+
+**Current Implementation Status:**
+- **PIC10/12/16 Baseline:** 33 instructions ✅ (100% coverage)
+- **PIC16 Enhanced Mid-range (F1xxx):** 35 of 49 instructions (71% coverage)
+  - **Missing 14 instructions:** LSLF, LSRF, ASRF, ROTF, MOVIW, MOVWI, SWAPF enhancements, and others
+- **PIC18 Base Instruction Set:** 75 instructions ✅ (100% coverage)
+- **PIC18 Extended Instructions:** 83 instructions (8 additional optimization instructions not supported)
+  - **Missing 8 instructions:** ADDFSR, ADDULNK, MOVLB enhancements, SUBFSR, and table operation extensions
+
+**Microchip Instruction Set Sizes (Reference):**
+| Architecture | Type | Count | Status |
+|-------------|------|-------|--------|
+| PIC10/12/16 | Baseline RISC | 33 | ✅ Complete |
+| PIC16F1xxx | Enhanced Mid-range | 49 | ⚠️ Partial (35/49) |
+| PIC18 | Base Set | 75 | ✅ Complete |
+| PIC18 | Extended Set | 83 | ⚠️ Partial (75/83) |
+
+### PIC18-Specific Instructions (Extended Set)
 - [ ] Verify all PIC18 extended instruction encodings
-- [ ] Extended instruction set support (ADDFSR, ADDULNK, etc.)
+- [ ] Complete PIC18 extended instruction support (8 remaining instructions)
+- [ ] Add missing PIC16 enhanced mode instructions (14 remaining)
 - [ ] Access RAM vs banked RAM handling
 
 ## 🐛 Known Issues & Improvements
