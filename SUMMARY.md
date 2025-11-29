@@ -22,7 +22,8 @@
 **Results**:
 - ✅ PIC16F15313: 148 bytes / 3584 bytes (4.13%) - CORRECT
 - ✅ PIC16F1847: 6 bytes / 16384 bytes (0.04%) - CORRECT
-- ✅ All 198 devices now use official Microchip datasheet specifications
+- ✅ 198 core devices verified from official Microchip datasheets
+- ⚠️ 681 additional devices use fallback specifications (can be expanded)
 
 ### 2. Executable Size Optimization (COMPLETED)
 **Problem**: Debug executable was 6.3MB
@@ -163,11 +164,17 @@ Edit `src/instruction.cpp` to use `OpcodeBuilder` namespace functions
 
 ### Supported Features:
 - ✅ PIC12, PIC16, PIC18 architectures
-- ✅ 198 device specifications from datasheets
+- ✅ 198 device specifications verified from datasheets (879 total devices recognized)
 - ✅ Intel HEX output
 - ✅ Listing file generation
 - ✅ Proper error reporting
 - ✅ Preprocessor support (#include, #define, etc.)
+
+### ⚠️ Note on Device Coverage:
+- **198 devices** have verified memory specifications from official datasheets
+- **879 total devices** are recognized by the assembler
+- **681 devices** use fallback/default specifications
+- To add missing devices: Edit `device_memory_specs.txt` and run `tools/generate_device_specs`
 
 ---
 
