@@ -90,6 +90,9 @@ public:
     // Parse all tokens and return list of instructions (two-pass: labels first, then code)
     std::vector<ParsedInstruction> parse();
 
+    // Preprocess PROCESSOR directives to set architecture before main parsing
+    void preprocessProcessorDirectives();
+
     // First pass: collect all labels and populate symbol table
     void firstPass();
 
@@ -115,6 +118,9 @@ public:
 
     // Set device by name (used by PROCESSOR directive)
     void setDeviceByName(const std::string& deviceName);
+
+    // Get current architecture (may be updated by PROCESSOR directive)
+    Architecture getArchitecture() const { return currentArch; }
 
 private:
     std::vector<Token> tokens;

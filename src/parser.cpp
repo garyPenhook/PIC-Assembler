@@ -820,6 +820,38 @@ void Parser::parseDirective(const Token& directive) {
     }
 }
 
+void Parser::preprocessProcessorDirectives() {
+    // Scan through tokens to find and process PROCESSOR directives early
+    // This ensures the correct architecture is set before we validate instructions
+    size_t tempPos = 0;
+    while (tempPos < tokens.size()) {
+        const Token& token = tokens[tempPos];
+
+        if (token.type == TokenType::DIRECTIVE) {
+            std::string dirName = token.value;
+            std::transform(dirName.begin(), dirName.end(), dirName.begin(), ::toupper);
+
+            // Remove leading dot for directives like .PROCESSOR
+            if (!dirName.empty() && dirName[0] == '.') {
+                dirName = dirName.substr(1);
+            }
+
+            if (dirName == "PROCESSOR") {
+                // Found PROCESSOR directive - check if next token is device name
+                if (tempPos + 1 < tokens.size() && tokens[tempPos + 1].type == TokenType::IDENTIFIER) {
+                    std::string deviceName = tokens[tempPos + 1].value;
+                    setDeviceByName(deviceName);
+                    // Update the instruction set architecture to match
+                    InstructionSet::getInstance().setArchitecture(currentArch);
+                    // Found and processed a PROCESSOR directive, continue scanning
+                    // (there might be multiple PROCESSOR directives, last one wins)
+                }
+            }
+        }
+        tempPos++;
+    }
+}
+
 void Parser::firstPass() {
     // First pass: collect all labels and handle directives
     // This populates the symbol table before code generation
@@ -941,6 +973,7 @@ void Parser::firstPass() {
 
             // If it was a DT directive, the PC is already advanced in handleDT
             // Clear the generated instructions since we're only in first pass
+            // (they were only needed to advance PC during first pass)
             if (dirName == "DT") {
                 generatedInstructions.clear();
             }
@@ -982,6 +1015,9 @@ void Parser::firstPass() {
 }
 
 std::vector<ParsedInstruction> Parser::parse() {
+    // Pre-process PROCESSOR directives to set architecture before main parsing
+    preprocessProcessorDirectives();
+
     // Two-pass assembly
     firstPass();  // First pass: collect all labels
 

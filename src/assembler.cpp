@@ -104,6 +104,13 @@ std::vector<AssembledCode> Assembler::assemble(const std::string& source) {
             // Sync device spec from parser (may have been updated by PROCESSOR directive)
             currentDeviceSpec = parser.getDeviceSpec();
 
+            // Sync architecture from parser (may have been updated by PROCESSOR directive)
+            Architecture parserArch = parser.getArchitecture();
+            if (parserArch != targetArch) {
+                targetArch = parserArch;
+                InstructionSet::getInstance().setArchitecture(targetArch);
+            }
+
             // Store data definitions from parser
             generatedData = parser.getDataDefinitions();
 

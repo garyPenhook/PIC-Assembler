@@ -1,18 +1,4 @@
-#include "device_specs.h"
-#include <algorithm>
-#include <cctype>
-DeviceSpec DeviceSpecs::getDeviceSpec(Architecture arch) {
-    switch (arch) {
-        case Architecture::PIC12:
-            return PIC10F200_SPEC;  // First available PIC12 device
-        case Architecture::PIC16:
-            return PIC16F1847_SPEC;  // Popular mid-range default
-        case Architecture::PIC18:
-            return PIC18F06Q40_SPEC;  // Largest Q40 variant
-    }
-    return PIC16F1847_SPEC;  // Fallback
-}
-std::optional<DeviceSpec> DeviceSpecs::getDeviceSpecByName(const std::string& deviceName) {
+// AUTO-GENERATED DEVICE LOOKUPS - DO NOT EDIT MANUALLY
 // Add these to getDeviceSpecByName() function
 
     // PIC12 devices
@@ -894,55 +880,3 @@ std::optional<DeviceSpec> DeviceSpecs::getDeviceSpecByName(const std::string& de
     if (deviceName == "PICRF675F") return PICRF675F_SPEC;
     if (deviceName == "PICRF675H") return PICRF675H_SPEC;
     if (deviceName == "PICRF675K") return PICRF675K_SPEC;
-
-    // Handle legacy generic names
-    if (deviceName == "PIC18-Q40" || deviceName == "PIC18F-Q40") {
-        return PIC18F06Q40_SPEC;  // Default to largest variant
-    }
-    return std::nullopt;
-}
-const char* DeviceSpecs::getDefaultDeviceName(Architecture arch) {
-    switch (arch) {
-        case Architecture::PIC12:
-            return "PIC10F200";
-        case Architecture::PIC16:
-            return "PIC16F1847";
-        case Architecture::PIC18:
-            return "PIC18F06Q40";
-    }
-    return "Unknown";
-}
-std::string DeviceSpecs::extractDeviceNameFromIncFile(const std::string& filename) {
-    // Extract device name from filename like "pic16f1840.cgen.inc" or "16f1840.inc"
-    // Returns uppercase device name like "PIC16F1840"
-    std::string name = filename;
-    // Remove .cgen.inc or .inc extension
-    size_t pos = name.find_last_of('.');
-    while (pos != std::string::npos) {
-        name = name.substr(0, pos);
-        pos = name.find_last_of('.');
-    }
-    // Convert to uppercase and add PIC prefix if missing
-    for (char& c : name) {
-        c = std::toupper(static_cast<unsigned char>(c));
-    }
-    // Add PIC prefix if not present
-    if (name.find("PIC") != 0) {
-        name = "PIC" + name;
-    }
-    return name;
-}
-std::optional<Architecture> DeviceSpecs::inferArchitectureFromDeviceName(const std::string& deviceName) {
-    // Infer architecture from device name
-    // PIC12: starts with "PIC10", "PIC12"
-    // PIC16: starts with "PIC16"
-    // PIC18: starts with "PIC18", "PICRF"
-    if (deviceName.find("PIC18") == 0 || deviceName.find("PICRF") == 0) {
-        return Architecture::PIC18;
-    } else if (deviceName.find("PIC16") == 0) {
-        return Architecture::PIC16;
-    } else if (deviceName.find("PIC10") == 0 || deviceName.find("PIC12") == 0) {
-        return Architecture::PIC12;
-    }
-    return std::nullopt;
-}
