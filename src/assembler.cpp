@@ -221,7 +221,7 @@ uint32_t Assembler::getProgramMemoryUsed() const {
 }
 
 uint32_t Assembler::getProgramMemoryTotal() const {
-    return DeviceSpecs::getDeviceSpec(targetArch).programMemoryBytes;
+    return currentDeviceSpec.programMemoryBytes;
 }
 
 uint32_t Assembler::getDataMemoryUsed() const {
@@ -230,11 +230,11 @@ uint32_t Assembler::getDataMemoryUsed() const {
 }
 
 uint32_t Assembler::getDataMemoryTotal() const {
-    return DeviceSpecs::getDeviceSpec(targetArch).dataMemoryBytes;
+    return currentDeviceSpec.dataMemoryBytes;
 }
 
 uint32_t Assembler::getEEPROMTotal() const {
-    return DeviceSpecs::getDeviceSpec(targetArch).eepromBytes;
+    return currentDeviceSpec.eepromBytes;
 }
 
 double Assembler::getProgramMemoryPercentage() const {
